@@ -30,7 +30,7 @@ namespace ChessGo
         public GameObject whiteQueen;
         public GameObject blackKing;
         public GameObject whiteKing;
-        
+
         //speech bubbles
         public SpeechBubble chatBubble;
 
@@ -45,7 +45,7 @@ namespace ChessGo
         //Camera perspectives
         public GameObject cameraHotspots;
         public GameObject topDownSpot;
-        
+
         //GUI
         public Button TopDownToggleButton;
         public Text myTurnText;
@@ -94,7 +94,7 @@ namespace ChessGo
 
         //if this is false, we're just debugging locally
         bool usingServer = false;
-		bool gameOver = false;
+	bool gameOver = false;
 
         public Sprite whiteTurnImage, blackTurnImage;
 
@@ -106,7 +106,7 @@ namespace ChessGo
         void Start()
         {
             usingServer = PlayerPrefs.GetInt("Hotseat") != 1 && 
-                            AsyncServerConnection.clientSocket != null && 
+                            AsyncServerConnection.clientSocket != null &&
                             AsyncServerConnection.clientSocket.Connected;
 
             maxX = TopLeft.transform.position.x;
@@ -124,7 +124,7 @@ namespace ChessGo
 
             // Send a start game message to the server
             if (usingServer)
-            {                
+            {
                 AsyncServerConnection.Send(Messages.STARTGAME);
                 AsyncServerConnection.Receive();
 
@@ -150,28 +150,28 @@ namespace ChessGo
             pieces = new GameObject[nRows, nRows];
             pieces2D = new GameObject[nRows, nRows];
             highlights = new GameObject[nRows, nRows];
-            
+
             Setup2D(); //shoots rays at the 2D pieces to get references.
             SetupPieces(pieces); //places the initial chess pieces
 
             StartTurn();
         }
 
-		IEnumerator VictoryAnimation() 
-		{
-			gameOver = true;
-			// Spam Stones
-			for (int n = 1; n <= 4; n++) {
-				for (int x = 0; x < 12; x++) {
-					for (int y = 0; y < 12; y++) {
-						if(board[x,y] == '\0')	PlaceStone (new Point (x, y),IAmBlack ? 'S' : 's');
-					}
-					yield return null;
-				}
-
-			}
-
+	IEnumerator VictoryAnimation()
+	{
+	    gameOver = true;
+	    // Spam Stones
+	    for (int n = 1; n <= 4; n++) {
+		for (int x = 0; x < 12; x++) {
+		    for (int y = 0; y < 12; y++) {
+			if(board[x,y] == '\0')	PlaceStone (new Point (x, y),IAmBlack ? 'S' : 's');
+		    }
+		    yield return null;
 		}
+
+	    }
+
+	}
 
         // Spins an object (the camera) to the other side of the board
         IEnumerator<GameObject> Rotate180(Transform o)
@@ -211,7 +211,7 @@ namespace ChessGo
             }
 
             chatBox.text += "\n" + inputChat.text;
-            
+
             //speech bubbles
             GameObject myKing = IAmBlack ? GameObject.Find("BlackKing(Clone)") : GameObject.Find("WhiteKing(Clone)");
             SpeechBubble b;
@@ -225,7 +225,7 @@ namespace ChessGo
             else
             {
                 b = myKing.transform.GetComponentInChildren<SpeechBubble>() as SpeechBubble;
-                
+
             }
 
             if (b == null)
@@ -246,7 +246,7 @@ namespace ChessGo
             //reset the input box
             inputChat.text = "";
             inputChat.Select();
-            
+
         }
 
         //shoots rays all the 2D chess models and 
@@ -345,7 +345,7 @@ namespace ChessGo
         //"Default", "Topdown", etc...
         Transform GetCameraHotspot(string s)
         {
-            Transform t = cameraHotspots.transform.FindChild(s);
+            Transform t = cameraHotspots.transform.Find(s);
             if (t == null)
                 Debug.LogError("No camera hotspot named " + s);
             return t;
@@ -481,17 +481,17 @@ namespace ChessGo
         void Update()
         {
             if (usingServer) {
-				if (AsyncServerConnection.messageQueue.Count > 0)
-					OnReceiveServerMessage (AsyncServerConnection.messageQueue.Dequeue ());
-			} else {
+		if (AsyncServerConnection.messageQueue.Count > 0)
+		    OnReceiveServerMessage (AsyncServerConnection.messageQueue.Dequeue ());
+	    } else {
 
-			}
+	    }
             if (myTurn && !preventMoves)
             {
                 if(!UpdateToggleDrag()) //if we didn't pick something up or drop something.
                     if(!grabbed && Input.GetMouseButtonDown(0))
                         StartCoroutine(PlaceGoStone());
-                
+
                 MouseOver(); //maybe call less frequently
             }
             if (Input.GetKeyDown("down")) { RotateCamera(); }
@@ -535,7 +535,7 @@ namespace ChessGo
                         {
                             curHotspot = 0;
                             StartTurn();
-                            
+
                         }
                         break;
                     }
@@ -624,7 +624,7 @@ namespace ChessGo
                 yield return null;
             }
 
-             
+
         }
 
         private void ReceiveChat(string msg)
@@ -677,9 +677,9 @@ namespace ChessGo
                 HideHighlights();
 
                 Point prevPoint = ClosestPoint(grabbedPrevPos);//change this back in Grab()
-                
+
                 Point p = ClosestPoint(grabbed.transform.position);
-                
+
                 if (MovePieceBoard(prevPoint, p))
                 {
                     MovePieceTable2D(pieces2D[grabbedInitialPoint.row,grabbedInitialPoint.col].transform, prevPoint, p);
