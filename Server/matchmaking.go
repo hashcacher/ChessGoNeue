@@ -2,65 +2,127 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
 	"net/http"
 )
 
+// MatchMeRequest is the format of the request sent to this endpoint
 type MatchMeRequest struct {
-	clientId string
+	ClientID string `json:"clientID"`
 }
 
+// MatchMeResponse is the format of the response sent from this endpoint
 type MatchMeResponse struct {
-	err string
-	haveMatch bool
-	areWhite bool
+	Err       error `json:"err"`
+	HaveMatch bool  `json:"haveMatch"`
+	AreWhite  bool  `json:"areWhite"`
 }
 
+// RespondOK means OK
 func RespondOK(w http.ResponseWriter) {
-	res := MatchMeResponse {
-		"", false, false
+	res := MatchMeResponse{
+		nil, false, false,
 	}
 
-	w.Write(json.Marshal(&res))
-}
+	resJSON, err := json.Marshal(res)
 
-func RespondErr(w http.ResponseWriter, err string) {
-	res := MatchMeResponse {
-		err, false, false
-	}
-
-	w.Write(json.Marshal(&res))
-}
-
-func RespondFound(w http.ResponseWriter) {
-	res := MatchMeResponse {
-		"", true, true // TODO ask game what color we are
-	}
-
-	w.Write(json.Marshal(&res))
-}
-
-
-func matchHandler(server *Server, w http.ResponseWriter, r *http.Request) {
-	req, err := json.Unmarshal(r.GetBody())
 	if err != nil {
-		ResponseErr(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Unknown server error occurred"))
+		return
+	}
+	w.Write(resJSON)
+	w.WriteHeader(http.StatusOK)
+}
+
+// RespondErr means not OK
+func RespondErr(w http.ResponseWriter, err error) {
+	res := MatchMeResponse{
+		err, false, false,
 	}
 
-	if looking[req.clientId] {
-		if len(looking) > 1 {
-			// Match found! Take the first 2 people
-			ResponseFound(w)
+	resJSON, err := json.Marshal(res)
 
+	if err != nil {
+		w.Write([]byte("Unknown server error occurred"))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write(resJSON)
+}
+
+// RespondFound means match found!
+func RespondFound(w http.ResponseWriter) {
+	res := MatchMeResponse{
+		nil, true, true, // TODO ask game what color we are
+	}
+
+	resJSON, err := json.Marshal(res)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Unknown server error occurred"))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(resJSON)
+}
+
+func (s *Server) matchMeHandler(w http.ResponseWriter, r *http.Request) {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		RespondErr(w, err)
+		return
+	}
+
+	var matchMeReq MatchMeRequest
+	err = json.Unmarshal(bodyBytes, &matchMeReq)
+	if err != nil {
+		RespondErr(w, err)
+		return
+	}
+
+	// If the client is already registered
+	if s.looking[matchMeReq.ClientID] != nil {
+		log.Printf("Responded with OK to %s", matchMeReq.ClientID)
+		RespondOK(w) // Just ignore it
+	} else {
+		// Create channel that will get response
+		resChan := make(chan bool)
+		s.looking[matchMeReq.ClientID] = resChan
+
+		// Start a coroutine that sends a response once ready
+		go func() {
+			res := <-resChan
+			if res {
+				RespondFound(w)
+			}
+		}()
+
+		// Remove the channel if conn closes
+		closeNotify := w.(http.CloseNotifier).CloseNotify()
+		go func() {
+			<-closeNotify
+			delete(s.looking, matchMeReq.ClientID)
+		}()
+
+		// Check if we have 2 people to match
+		if len(s.looking) > 1 {
 			players := make([]string, 2)
 			ct := 0
-			for clientId, _ := range server.looking {
-				delete(server.looking, clientId)
-				players[ct++] = clientId
+			for clientID, resChan := range s.looking {
+				players[ct] = clientID
+				ct++
+
+				resChan <- true
 				if ct == 2 {
 					break
 				}
+
+				delete(s.looking, clientID)
 			}
-		} else {
 		}
 	}
 }
