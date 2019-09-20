@@ -8,7 +8,7 @@ type MatchRequest struct {
 }
 
 // MatchRequestRepository is the use case for Match entitiy
-type MatchRequestRepository interface {
+type MatchRequests interface {
 	Store(MatchRequest) error
 	FindAllMatchRequestsByUserId(userId int) []MatchRequest
 	Delete(id int) (deleted int, err error)
@@ -16,9 +16,9 @@ type MatchRequestRepository interface {
 
 // MatchRequestInteractor is a struct that holds data to be injected for use cases
 type MatchRequestInteractor struct {
-	MatchRequestRepository MatchRequestRepository
-	UserRepository         UserRepository
-	GameRepository         GameRepository
+	matchRequests MatchRequests
+	users         Users
+	games         Games
 }
 
 // MatchMe will take in a user, create a match request, and wait for a notification

@@ -8,8 +8,8 @@ type Game struct {
 	Board     string
 }
 
-// GameRepository is the use case for Game entitiy
-type GameRepository interface {
+// Games is the use case for Game entitiy
+type Games interface {
 	Store(Game) error
 	FindById(id int) (Game, error)
 	Update(Game) error
@@ -17,8 +17,8 @@ type GameRepository interface {
 
 // GameInteractor is a struct that holds data to be injected for use cases
 type GameInteractor struct {
-	UserRepository UserRepository
-	GameRepository GameRepository
+	UserRepository Users
+	GameRepository Games
 }
 
 // ExecuteMove validates a user and then performs a move

@@ -7,7 +7,7 @@ type User struct {
 }
 
 // UserRepository is the use case for User entitiy
-type UserRepository interface {
+type Users interface {
 	Store(User) error
 	FindById(id int) (User, error)
 	Update(User) error
@@ -15,12 +15,12 @@ type UserRepository interface {
 
 // UserInteractor is used to interact with user repositories and other related repositories
 type UserInteractor struct {
-	Users UserRepository
+	users Users
 }
 
 // FindById fetches the user from the repository and returns it
 func (i *UserInteractor) FindById(id int) (User, error) {
-	user, err := i.Users.FindById(id)
+	user, err := i.users.FindById(id)
 	if err != nil {
 		return User{}, err
 	}
