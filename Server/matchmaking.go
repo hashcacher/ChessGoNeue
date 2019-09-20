@@ -34,6 +34,7 @@ func RespondOK(w http.ResponseWriter) {
 	}
 	w.Write(resJSON)
 	w.WriteHeader(http.StatusOK)
+	log.Printf("Responded with ok ")
 }
 
 // RespondErr means not OK
@@ -51,6 +52,7 @@ func RespondErr(w http.ResponseWriter, err error) {
 	}
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write(resJSON)
+	log.Printf("Responded with err ")
 }
 
 // RespondFound means match found!
@@ -68,6 +70,7 @@ func RespondFound(w http.ResponseWriter) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(resJSON)
+	log.Printf("Responded with found ")
 }
 
 func (s *Server) matchMeHandler(w http.ResponseWriter, r *http.Request) {
@@ -86,43 +89,45 @@ func (s *Server) matchMeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// If the client is already registered
 	if s.looking[matchMeReq.ClientID] != nil {
-		log.Printf("Responded with OK to %s", matchMeReq.ClientID)
 		RespondOK(w) // Just ignore it
 	} else {
 		// Create channel that will get response
-		resChan := make(chan bool)
+		resChan := make(chan bool, 2)
 		s.looking[matchMeReq.ClientID] = resChan
 
 		// Start a coroutine that sends a response once ready
-		go func() {
+		go func(responseWriter http.ResponseWriter) {
 			res := <-resChan
 			if res {
-				RespondFound(w)
+				RespondFound(responseWriter)
 			}
-		}()
+		}(w)
 
 		// Remove the channel if conn closes
+		// XXX doesnt seem to fire
 		closeNotify := w.(http.CloseNotifier).CloseNotify()
-		go func() {
+		go func(clientID string) {
 			<-closeNotify
-			delete(s.looking, matchMeReq.ClientID)
-		}()
+			delete(s.looking, clientID)
+		}(matchMeReq.ClientID)
 
 		// Check if we have 2 people to match
 		if len(s.looking) > 1 {
-			players := make([]string, 2)
 			ct := 0
 			for clientID, resChan := range s.looking {
-				players[ct] = clientID
+				// Drop two messages in the channel:
+				// One to complete the handler and one for the goroutine
+				resChan <- true
+				resChan <- true
 				ct++
 
-				resChan <- true
+				delete(s.looking, clientID)
+
 				if ct == 2 {
 					break
 				}
-
-				delete(s.looking, clientID)
 			}
 		}
+		<-resChan // Just hang out
 	}
 }
