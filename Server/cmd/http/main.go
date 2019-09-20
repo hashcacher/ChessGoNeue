@@ -5,25 +5,27 @@ import (
 	"net/http"
 
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
-	"github.com/hashcacher/ChessGoNeue/Server/v2/implementations"
+	inmemory "github.com/hashcacher/ChessGoNeue/Server/v2/inmemory"
 )
 
 func main() {
 
-	gameRepository := implementations.IMGameRepository{}
-	users := make(map[int]core.User)
-	users[1] = core.User{
-		Id:       1,
-		Username: "zac",
-	}
-	userRepository := implementations.NewIMUserRepIMUserRepository(users)
-	matchRequestRepository := implementations.IMMatchRequestRepository{}
+	// Create in memory data stores
+	games := inmemory.NewGames(map[int]core.Game{})
+	users := inmemory.NewUsers(map[int]core.User{
+		1: core.User{
+			Id:       1,
+			Username: "zac",
+		},
+	})
+	matchRequests := inmemory.NewMatchRequests(map[int]core.MatchRequest{})
 
-	gameInteractor := core.GameInteractor{&userRepository, &gameRepository}
-	userInteractor := core.UserInteractor{&userRepository}
-	matchRequestInteractor := core.MatchRequestInteractor{matchRequestRepository, &userRepository, &gameRepository}
+	// Create interactors based on the data stores above
+	gameInteractor := core.NewGamesInteractor(&games, &users)
+	userInteractor := core.NewUsersInteractor(&users)
+	matchRequestInteractor := core.NewMatchRequestsInteractor(matchRequests, &users, &games)
 
-	s := implementations.NewWebservice(gameInteractor, userInteractor, matchRequestInteractor)
+	s := inmemory.NewWebservice(gameInteractor, userInteractor, matchRequestInteractor)
 
 	// TODO add http.servermux with metrics/logging middleware
 	http.HandleFunc("/v1/getUser", s.GetUser)

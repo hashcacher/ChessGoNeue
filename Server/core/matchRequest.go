@@ -7,23 +7,32 @@ type MatchRequest struct {
 	Elo  int
 }
 
-// MatchRequestRepository is the use case for Match entitiy
+// MatchRequests is the use case for Match entitiy
 type MatchRequests interface {
 	Store(MatchRequest) error
 	FindAllMatchRequestsByUserId(userId int) []MatchRequest
 	Delete(id int) (deleted int, err error)
 }
 
-// MatchRequestInteractor is a struct that holds data to be injected for use cases
-type MatchRequestInteractor struct {
+// MatchRequestsInteractor is a struct that holds data to be injected for use cases
+type MatchRequestsInteractor struct {
 	matchRequests MatchRequests
 	users         Users
 	games         Games
 }
 
+// NewMatchRequestsInteractor generates a new MatchRequestsInteractor from the given Users store
+func NewMatchRequestsInteractor(matchRequests MatchRequests, users Users, games Games) MatchRequestsInteractor {
+	return MatchRequestsInteractor{
+		matchRequests,
+		users,
+		games,
+	}
+}
+
 // MatchMe will take in a user, create a match request, and wait for a notification
 // saying a match was succesful
-func (i *MatchRequestInteractor) MatchMe(userId int) {
+func (i *MatchRequestsInteractor) MatchMe(userId int) {
 	// (UserRepo) Validate user exists
 
 	// Does a valid match request from another user already exist?

@@ -14,12 +14,19 @@ type Users interface {
 }
 
 // UserInteractor is used to interact with user repositories and other related repositories
-type UserInteractor struct {
+type UsersInteractor struct {
 	users Users
 }
 
+// NewUsersInteractor generates a new UsersInteractor from the given Users store
+func NewUsersInteractor(users Users) UsersInteractor {
+	return UsersInteractor{
+		users,
+	}
+}
+
 // FindById fetches the user from the repository and returns it
-func (i *UserInteractor) FindById(id int) (User, error) {
+func (i *UsersInteractor) FindById(id int) (User, error) {
 	user, err := i.users.FindById(id)
 	if err != nil {
 		return User{}, err

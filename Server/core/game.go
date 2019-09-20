@@ -15,14 +15,22 @@ type Games interface {
 	Update(Game) error
 }
 
-// GameInteractor is a struct that holds data to be injected for use cases
-type GameInteractor struct {
-	UserRepository Users
-	GameRepository Games
+// GamesInteractor is a struct that holds data to be injected for use cases
+type GamesInteractor struct {
+	games Games
+	users Users
+}
+
+// NewGamesInteractor generates a new GamesInteractor from the given Users store
+func NewGamesInteractor(games Games, users Users) GamesInteractor {
+	return GamesInteractor{
+		games,
+		users,
+	}
 }
 
 // ExecuteMove validates a user and then performs a move
-func (i *GameInteractor) ExecuteMove(m string, userId, gameId int) {
+func (i *GamesInteractor) ExecuteMove(m string, userId, gameId int) {
 	// (UserRepository) Validate user is in match and it is their turn
 	// (GameRepository) Perform update
 	// (-)              Notify other user about the update

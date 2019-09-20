@@ -1,4 +1,4 @@
-package service
+package inmemory
 
 import (
 	"fmt"
@@ -10,14 +10,14 @@ import (
 
 // Webservice struct holds data to be injected for use in implementing the web service
 type Webservice struct {
-	gameInteractor         core.GameInteractor
-	userInteractor         core.UserInteractor
-	matchRequestInteractor core.MatchRequestInteractor
+	gamesInteractor         core.GamesInteractor
+	usersInteractor         core.UsersInteractor
+	matchRequestsInteractor core.MatchRequestsInteractor
 }
 
 // NewWebservice takes in interactors and creates a new web service that will use those interactors to fetch
 // and manipulate data
-func NewWebservice(gameInteractor core.GameInteractor, userInteractor core.UserInteractor, matchRequestInteractor core.MatchRequestInteractor) Webservice {
+func NewWebservice(gameInteractor core.GamesInteractor, userInteractor core.UsersInteractor, matchRequestInteractor core.MatchRequestsInteractor) Webservice {
 	return Webservice{
 		gameInteractor,
 		userInteractor,
@@ -28,7 +28,7 @@ func NewWebservice(gameInteractor core.GameInteractor, userInteractor core.UserI
 // GetUser retrieves a user
 func (service *Webservice) GetUser(w http.ResponseWriter, r *http.Request) {
 	userId, _ := strconv.Atoi(r.FormValue("userId"))
-	user, _ := service.userInteractor.FindById(userId)
+	user, _ := service.usersInteractor.FindById(userId)
 	// Check for empty
 	if user.Id == 0 {
 		http.Error(w, "user not found", http.StatusNotFound)

@@ -1,4 +1,4 @@
-package matchRequest
+package inmemory_test
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"service"
+	service "github.com/hashcacher/ChessGoNeue/Server/v2/inmemory"
 )
 
 func TestMatchMeOK(t *testing.T) {
