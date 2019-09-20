@@ -1,6 +1,10 @@
 package domain
 
-// Our application's entities (layer 1)
+// The domain consists of our application's entities. These are the inner most layer of our application
+// and should not depend on anything. They define the enterprise wide business logic of our application.
+// for example here we can implement the logic for making a move in chessgo, and how that affects a
+// game entity, but should not include how to handle storing that data.
+//
 // Entity: an object with methods that can be used by many different applications
 //  and depends on nothing.
 
