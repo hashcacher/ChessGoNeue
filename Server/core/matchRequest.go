@@ -30,19 +30,19 @@ func NewMatchRequestsInteractor(matchRequests MatchRequests, users Users, games 
 	}
 }
 
-// MatchMe will take in a user, create a match request, and wait for a notification
-// saying a match was succesful
-func (i *MatchRequestsInteractor) MatchMe(clientID string) {
+// // MatchMe will take in a user, create a match request, and wait for a notification
+// // saying a match was succesful
+// func (i *MatchRequestsInteractor) MatchMe(clientID string) {
 
-	// (UserRepo) Validate user exists
+// 	// (UserRepo) Validate user exists
 
-	// Does a valid match request from another user already exist?
-	//	yes:
-	//		(MatchRequestRepository) delete the match request
-	//		(GameRepository)         create a new game
-	//    (-)                      notify the other user that a match was found and a game was created
-	//	no:
-	//		(MatchRequestRepository) create a match request
-	//    (-)                      wait for a notification that a match was found and a game was created
-	// Return the new game
-}
+// 	// Does a valid match request from another user already exist?
+// 	//	yes:
+// 	//		(MatchRequestRepository) delete the match request
+// 	//		(GameRepository)         create a new game
+// 	//    (-)                      notify the other user that a match was found and a game was created
+// 	//	no:
+// 	//		(MatchRequestRepository) create a match request
+// 	//    (-)                      wait for a notification that a match was found and a game was created
+// 	// Return the new game
+// }

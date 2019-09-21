@@ -11,8 +11,9 @@ type User struct {
 
 // Users is the use case for User entitiy
 type Users interface {
-	Store(User) (User, error)
+	Store(User) (id int, err error)
 	FindByClientID(clientID string) (User, error)
+	FindByID(id int) (User, error)
 	Update(User) error
 }
 
@@ -29,20 +30,29 @@ func NewUsersInteractor(users Users) UsersInteractor {
 }
 
 // Create creates a new user
-func (i *UsersInteractor) Create(user User) (User, error) {
+func (i *UsersInteractor) Create(user User) (int, error) {
 	if len(user.Username) == 0 {
-		return User{}, errors.New("must specify username")
+		return 0, errors.New("username can't be empty")
 	}
-	storedUser, err := i.users.Store(user)
+	id, err := i.users.Store(user)
 	if err != nil {
-		return User{}, err
+		return 0, err
 	}
-	return storedUser, nil
+	return id, nil
 }
 
 // FindByClientID fetches the user from the repository and returns it
-func (i *UsersInteractor) FindByClientID(id string) (User, error) {
-	user, err := i.users.FindByClientID(id)
+func (i *UsersInteractor) FindByClientID(clientID string) (User, error) {
+	user, err := i.users.FindByClientID(clientID)
+	if err != nil {
+		return User{}, err
+	}
+	return user, nil
+}
+
+// FindByID fetches the user from the repository and returns it
+func (i *UsersInteractor) FindByID(id int) (User, error) {
+	user, err := i.users.FindByID(id)
 	if err != nil {
 		return User{}, err
 	}
