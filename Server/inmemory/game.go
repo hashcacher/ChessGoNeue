@@ -13,7 +13,7 @@ func NewGames(games map[int]core.Game) Games {
 }
 
 func (r *Games) Store(game core.Game) error {
-	r.games[game.Id] = game
+	r.games[game.ID] = game
 	return nil
 }
 
@@ -22,6 +22,6 @@ func (r *Games) FindById(id int) (core.Game, error) {
 }
 
 func (r *Games) Update(game core.Game) error {
-	r.games[game.Id] = game
+	r.games[game.ID] = game
 	return nil
 }

@@ -13,7 +13,7 @@ func NewMatchRequests(matchRequests map[int]core.MatchRequest) MatchRequests {
 }
 
 func (r MatchRequests) Store(matchRequest core.MatchRequest) error {
-	r.matchRequests[matchRequest.Id] = matchRequest
+	r.matchRequests[matchRequest.ID] = matchRequest
 	return nil
 }
 

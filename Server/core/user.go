@@ -1,19 +1,22 @@
 package core
 
+import "errors"
+
 // User stores user profile data
 type User struct {
-	Id       int
-	Username string
+	ID       int    `json:"id"`
+	ClientID string `json:"clientID"`
+	Username string `json:"username"`
 }
 
-// UserRepository is the use case for User entitiy
+// Users is the use case for User entitiy
 type Users interface {
-	Store(User) error
-	FindById(id int) (User, error)
+	Store(User) (User, error)
+	FindByClientID(clientID string) (User, error)
 	Update(User) error
 }
 
-// UserInteractor is used to interact with user repositories and other related repositories
+// UsersInteractor is used to interact with user repositories and other related repositories
 type UsersInteractor struct {
 	users Users
 }
@@ -25,9 +28,21 @@ func NewUsersInteractor(users Users) UsersInteractor {
 	}
 }
 
-// FindById fetches the user from the repository and returns it
-func (i *UsersInteractor) FindById(id int) (User, error) {
-	user, err := i.users.FindById(id)
+// Create creates a new user
+func (i *UsersInteractor) Create(user User) (User, error) {
+	if len(user.Username) == 0 {
+		return User{}, errors.New("must specify username")
+	}
+	storedUser, err := i.users.Store(user)
+	if err != nil {
+		return User{}, err
+	}
+	return storedUser, nil
+}
+
+// FindByClientID fetches the user from the repository and returns it
+func (i *UsersInteractor) FindByClientID(id string) (User, error) {
+	user, err := i.users.FindByClientID(id)
 	if err != nil {
 		return User{}, err
 	}

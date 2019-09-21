@@ -1,4 +1,4 @@
-package matchRequest
+package inmemory
 
 import (
 	"net/http/httptest"

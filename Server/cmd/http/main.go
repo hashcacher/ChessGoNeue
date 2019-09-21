@@ -12,12 +12,7 @@ func main() {
 
 	// Create in memory data stores
 	games := inmemory.NewGames(map[int]core.Game{})
-	users := inmemory.NewUsers(map[int]core.User{
-		1: core.User{
-			Id:       1,
-			Username: "zac",
-		},
-	})
+	users := inmemory.NewUsers()
 	matchRequests := inmemory.NewMatchRequests(map[int]core.MatchRequest{})
 
 	// Create interactors based on the data stores above

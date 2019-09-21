@@ -2,15 +2,15 @@ package core
 
 // MatchRequest holds data to determine how to match users together for a game
 type MatchRequest struct {
-	Id   int
-	User int
-	Elo  int
+	ID   int `json:"id"`
+	User int `json:"user"`
+	Elo  int `json:"elo"`
 }
 
 // MatchRequests is the use case for Match entitiy
 type MatchRequests interface {
 	Store(MatchRequest) error
-	FindAllMatchRequestsByUserId(userId int) []MatchRequest
+	FindAllMatchRequestsByUserId(userID int) []MatchRequest
 	Delete(id int) (deleted int, err error)
 }
 
@@ -32,7 +32,8 @@ func NewMatchRequestsInteractor(matchRequests MatchRequests, users Users, games 
 
 // MatchMe will take in a user, create a match request, and wait for a notification
 // saying a match was succesful
-func (i *MatchRequestsInteractor) MatchMe(userId int) {
+func (i *MatchRequestsInteractor) MatchMe(clientID string) {
+
 	// (UserRepo) Validate user exists
 
 	// Does a valid match request from another user already exist?

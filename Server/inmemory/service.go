@@ -3,7 +3,6 @@ package inmemory
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 )
@@ -27,10 +26,10 @@ func NewWebservice(gameInteractor core.GamesInteractor, userInteractor core.User
 
 // GetUser retrieves a user
 func (service *Webservice) GetUser(w http.ResponseWriter, r *http.Request) {
-	userId, _ := strconv.Atoi(r.FormValue("userId"))
-	user, _ := service.usersInteractor.FindById(userId)
+	clientID := r.FormValue("clientID")
+	user, _ := service.usersInteractor.FindByClientID(clientID)
 	// Check for empty
-	if user.Id == 0 {
+	if user.ClientID == "" {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
 	}

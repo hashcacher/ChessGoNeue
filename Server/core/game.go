@@ -2,10 +2,10 @@ package core
 
 // Game stores chessgo game state such as the current board and who is in the game
 type Game struct {
-	Id        int
-	BlackUser int
-	WhiteUser int
-	Board     string
+	ID        int        `json:"id"`
+	BlackUser int        `json:"blackUser"`
+	WhiteUser int        `json:"WhiteUser"`
+	Board     [8][8]byte `json:"board"`
 }
 
 // Games is the use case for Game entitiy
@@ -30,7 +30,7 @@ func NewGamesInteractor(games Games, users Users) GamesInteractor {
 }
 
 // ExecuteMove validates a user and then performs a move
-func (i *GamesInteractor) ExecuteMove(m string, userId, gameId int) {
+func (i *GamesInteractor) ExecuteMove(m string, userID, gameId int) {
 	// (UserRepository) Validate user is in match and it is their turn
 	// (GameRepository) Perform update
 	// (-)              Notify other user about the update
