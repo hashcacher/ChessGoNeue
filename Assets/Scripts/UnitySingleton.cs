@@ -3,6 +3,7 @@ using System.Collections;
 
 namespace ChessGo
 {
+    // Stays alive between scenes
     public class UnitySingleton : MonoBehaviour
     {
         private static UnitySingleton instance = null;
@@ -10,6 +11,7 @@ namespace ChessGo
         {
             get { return instance; }
         }
+        public bool amIWhite;
         void Awake()
         {
             if (instance != null && instance != this)
@@ -23,15 +25,5 @@ namespace ChessGo
             }
             DontDestroyOnLoad(this.gameObject);
         }
-
-        public void OnApplicationQuit()
-        {
-            Debug.Log("Closing Socket");
-            // Release the socket.
-            AsyncServerConnection.Shutdown();
-        }
-
-        // any other methods you need
-        //http://answers.unity3d.com/questions/11314/audio-or-music-to-continue-playing-between-scene-c.html
     }
 }

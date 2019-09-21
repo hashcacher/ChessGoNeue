@@ -4,26 +4,24 @@ using UnityEngine.Networking;
 using UnityEngine.EventSystems;
 using System.Collections;
 using System.Text;
+using System.Linq;
 using UnityEngine.SceneManagement;
 
 namespace ChessGo
 {
     public class MainMenu : MonoBehaviour
     {
-        EventSystem system;
-
-        //deprecated. we don't login anymore
-        public InputField username;
-        public InputField password;
-
-        public InputField nickname;
-
         public Canvas canvas;
 
+        // First panel
+        public InputField nickname;
+        public Button playOnline;
+        public Button playHotseat;
         public Text errorMessage;
 
-        public Text queueTimeText;
-        public Text playButtonText;
+        public Text countdown;
+        public Text searching;
+        public Button backButton;
 
         private float queueTime;
         private bool inQueue;
@@ -35,46 +33,107 @@ namespace ChessGo
         private MarkovNameGenerator generator;
 
         public delegate void ConnectDelegate(bool success);
+        private int failedConnections = 0;
+        private string playerID = "null";
 
-        void Start()
-        {
-            system = EventSystem.current;// EventSystemManager.currentSystem;
-
-            try
-            {
+        void Awake() {
+            // Get / generate player ID
+            if (PlayerPrefs.HasKey("ID")) {
+                this.playerID = PlayerPrefs.GetString("ID");
+            } else {
+                this.playerID = RandomString(20);
+                PlayerPrefs.SetString("ID", this.playerID);
             }
-            catch
-            {
-                errorMessage.text = "The server is currently offline. Please try again later.";
-                return;
-            }
-            StartCoroutine(MatchMe());
 
-
+            canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
             toggleGroup = GameObject.FindObjectOfType<ToggleGroup>();
+            playOnline = GameObject.Find("Online").GetComponent<Button>();
+            errorMessage = GameObject.Find("Error Text").GetComponent<Text>();
+
+            countdown = GameObject.Find("Countdown").GetComponent<Text>();
+            searching = GameObject.Find("Searching Header").GetComponent<Text>();
         }
 
-        IEnumerator MatchMe()
-        {
-            var msg = string.Format("{{ \"clientID\": \"{0}\"}}", "bob");
-            Debug.Log(msg);
-            using (UnityWebRequest www = GoodPost("http://localhost:8080/v1/matchMe", msg))
-            {
-                yield return www.Send();
-                Debug.Log(www.downloadHandler.isDone);
-                //Debug.Log(www.downloadHandler.);
+        void Start() {
+        }
 
-                if (www.isNetworkError || www.isHttpError)
-                {
-                    Debug.LogError(www.error);
-                }
-                else
-                {
-                    //Debug.Log("Match Me complete");
+        public static string RandomString(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+              .Select(s => s[Random.Range(0, s.Length)]).ToArray());
+        }
+
+        IEnumerator MatchMe() {
+            var request = new MatchRequest();
+            request.clientID = playerID;
+            var msg = JsonUtility.ToJson(request);
+            var host = "https://chessgo.xyz";
+            if (Application.isEditor) {
+                host = "localhost:8080";
+            }
+
+            // Post our api
+            using (UnityWebRequest www = GoodPost(host + "/v1/matchMe", msg))
+            {
+                yield return www.SendWebRequest();
+
+                if (www.isNetworkError) {
+                    // Exponential backoff
+                    Debug.LogError("MatchMe return an error: " + www.error);
+                    this.failedConnections++;
+                    yield return new WaitForSeconds(Mathf.Pow(2f, this.failedConnections) / 10f * Random.Range(.5f, 1.0f));
+
+                    if (this.failedConnections >= 5) {
+                        errorMessage.text = "Server is experiencing technical difficulties. Please try again later.";
+                        OnBackPress();
+                    } else {
+                        StartCoroutine(MatchMe());
+                    }
+                } else if (www.isHttpError) {
+                    var response = JsonUtility.FromJson<MatchResponse>(www.downloadHandler.text);
+                    if (response != null) {
+                        Debug.Log("MatchMe error: " + response.err);
+                    }
+                } else {
+                    // Found! Start game
+                    var response = JsonUtility.FromJson<MatchResponse>(www.downloadHandler.text);
+                    if (response != null) {
+                        if (response.haveMatch) {
+                            Debug.Log("Found match!");
+                            StartCoroutine(Countdown());
+                        } else {
+                            Debug.Log("MatchMe 200 doesnt have match wtf error: " + response.err);
+                        }
+                    } else {
+                        Debug.Log("Couldnt parse server response: " + www.downloadHandler.text);
+                    }
                 }
             }
         }
 
+        IEnumerator Countdown() {
+            StopCoroutine("Dots");
+
+            searching.transform.Translate(-10, 0, 0);
+            searching.text = "Match Found";
+            for (int i = 3; i >= 0; i--) {
+                countdown.text = i.ToString();
+                yield return new WaitForSecondsRealtime(1);
+            }
+
+            PlayerPrefs.SetInt("Hotseat", 0);
+            SceneManager.LoadScene("GameBoard");
+        }
+
+        IEnumerator Dots() {
+            var dotCount = 3;
+            while (true) {
+                searching.text = "Searching" + string.Concat(Enumerable.Repeat(".", dotCount).ToArray());
+                yield return new WaitForSeconds(0.3f);
+                dotCount = dotCount % 5 + 1;
+            }
+        }
         UnityWebRequest GoodPost(string url, string body) {
            byte[] bytes = Encoding.ASCII.GetBytes(body);
            var request             = new UnityWebRequest(url);
@@ -88,7 +147,6 @@ namespace ChessGo
 
         void ConnectCallback(bool success)
         {
-            canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
             if (!success)
             {
                 Transform mainPanel = canvas.transform.Find("Main Panel").transform;
@@ -106,17 +164,6 @@ namespace ChessGo
             Debug.Log(clients.Length + " players in lobby");
         }
 
-        // Update is called once per frame
-        void Update()
-        {
-            if (inQueue)
-            {
-                queueTime += Time.deltaTime;
-                queueTimeText.text = queueTime.ToString("F1") + " seconds in queue.";
-            }
-        }
-
-
         void OnReceiveServerMessage(Message msg) //changed from object[] params
         {
             int message = msg.message;
@@ -128,13 +175,11 @@ namespace ChessGo
                     {
                         if(parameters.Length > 0)
                         {
-                            PlayerPrefs.SetInt("ID", System.Convert.ToInt32(parameters[0]));
                         }
                         break;
                     }
                 case Messages.LOADGAME:
                 {
-                    PlayerPrefs.SetInt("Hotseat", 0);
                     SceneManager.LoadScene("GameBoard");
                     break;
                 }
@@ -163,6 +208,9 @@ namespace ChessGo
         public void OnOnlinePress()
         {
             SlidePanels(1);
+            this.failedConnections = 0;
+            StartCoroutine(MatchMe());
+            StartCoroutine("Dots");
         }
 
         public void OnRulesPress()
@@ -174,51 +222,6 @@ namespace ChessGo
         {
             int delta = (int)menuPanels[0].localPosition.x / 800;
             SlidePanels(delta);
-        }
-
-        public void OnPlayPress()
-        {
-            //difficulty
-            System.Collections.Generic.IEnumerable<Toggle> toggles = toggleGroup.ActiveToggles();
-            int difficulty = 0;
-            foreach(Toggle t in toggles)
-                if(t.name == "Beginner")
-                    difficulty = 1;
-                else if(t.name == "Intermediate")
-                    difficulty = 2;
-                else
-                    difficulty = 3;
-
-            //id
-            int myID = PlayerPrefs.GetInt("ID");
-
-            AsyncServerConnection.Send(Messages.FINDMATCH, difficulty.ToString(), myID.ToString(), nickname.text);
-            AsyncServerConnection.Receive();
-            StartQueueTimer();
-            Debug.Log("Pressed find match");
-        }
-
-        public void StartQueueTimer()
-        {
-            if (inQueue)
-            {
-                inQueue = !inQueue;
-                StopQueueTimer();
-            }
-            else
-            {
-                queueTimeText.enabled = true;
-                queueTime = 0;
-                playButtonText.text = "Looking...";
-                inQueue = true;
-            }
-        }
-
-
-        public void StopQueueTimer()
-        {
-            playButtonText.text = "Play";
-            queueTimeText.enabled = false;
         }
 
         // Moves a on object o smoothly

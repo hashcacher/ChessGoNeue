@@ -33,7 +33,6 @@ func RespondOK(w http.ResponseWriter) {
 		return
 	}
 	w.Write(resJSON)
-	w.WriteHeader(http.StatusOK)
 	log.Printf("Responded with ok ")
 }
 
@@ -68,7 +67,6 @@ func RespondFound(w http.ResponseWriter) {
 		w.Write([]byte("Unknown server error occurred"))
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 	w.Write(resJSON)
 	log.Printf("Responded with found ")
 }
@@ -92,24 +90,25 @@ func (s *Server) matchMeHandler(w http.ResponseWriter, r *http.Request) {
 		RespondOK(w) // Just ignore it
 	} else {
 		// Create channel that will get response
-		resChan := make(chan bool, 2)
+		resChan := make(chan bool)
+		finishChan := make(chan bool)
 		s.looking[matchMeReq.ClientID] = resChan
 
 		// Start a coroutine that sends a response once ready
-		go func(responseWriter http.ResponseWriter) {
-			res := <-resChan
-			if res {
-				RespondFound(responseWriter)
-			}
-		}(w)
+		go func(responseWriter http.ResponseWriter, resChan chan bool, finishChan chan bool) {
+			<-resChan
+			RespondFound(responseWriter)
+			finishChan <- true
+		}(w, resChan, finishChan)
 
 		// Remove the channel if conn closes
 		// XXX doesnt seem to fire
 		closeNotify := w.(http.CloseNotifier).CloseNotify()
-		go func(clientID string) {
+		go func(clientID string, finishChan chan bool) {
 			<-closeNotify
 			delete(s.looking, clientID)
-		}(matchMeReq.ClientID)
+			finishChan <- true
+		}(matchMeReq.ClientID, finishChan)
 
 		// Check if we have 2 people to match
 		if len(s.looking) > 1 {
@@ -117,7 +116,6 @@ func (s *Server) matchMeHandler(w http.ResponseWriter, r *http.Request) {
 			for clientID, resChan := range s.looking {
 				// Drop two messages in the channel:
 				// One to complete the handler and one for the goroutine
-				resChan <- true
 				resChan <- true
 				ct++
 
@@ -128,6 +126,6 @@ func (s *Server) matchMeHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		<-resChan // Just hang out
+		<-finishChan // Wait for something to trigger finish
 	}
 }
