@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chessgo
+  labels:
+    app: chessgo
+  annotations:
+    co.elastic.logs/enabled: 'true'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chessgo
+  template:
+    metadata:
+      labels:
+        app: chessgo
+    spec:
+      containers:
+      - name: chessgo
+        image: gcr.io/portfolio-239904/chessgoplaylists@sha256:556d12c9f46203da53d4ba03cc7503646a3af6cc7d9d3dd99be826fe73bc99ee
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_HOST
+          value: "chessgo-prod-postgres.default.svc.cluster.local"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_PASS
+          value: ""
+
+        livenessProbe:
+          initialDelaySeconds: 2
+          periodSeconds: 10
+          httpGet:
+            path: /ding
+            port: 8080
+
+        resources:
+          requests:
+            ephemeral-storage: "1Gi"
+          limits:
+            ephemeral-storage: "2Gi"
+
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: chessgo
+spec:
+  selector:
+    app: chessgo
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080

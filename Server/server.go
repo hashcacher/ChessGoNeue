@@ -28,6 +28,8 @@ func main() {
 	// TODO add http.servermux with metrics/logging middleware
 	http.HandleFunc("/v1/matchMe", s.matchMeHandler)
 	http.HandleFunc("/v1/move", s.moveHandler)
+	http.HandleFunc("/", s.webHandler)
+	http.HandleFunc("/ding", s.dingHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
