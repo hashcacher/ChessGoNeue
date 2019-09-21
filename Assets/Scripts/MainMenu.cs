@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Networking;
 using UnityEngine.EventSystems;
 using System.Collections;
+using System.Text;
 using UnityEngine.SceneManagement;
 
 namespace ChessGo
@@ -9,7 +11,7 @@ namespace ChessGo
     public class MainMenu : MonoBehaviour
     {
         EventSystem system;
-        
+
         //deprecated. we don't login anymore
         public InputField username;
         public InputField password;
@@ -19,7 +21,7 @@ namespace ChessGo
         public Canvas canvas;
 
         public Text errorMessage;
-        
+
         public Text queueTimeText;
         public Text playButtonText;
 
@@ -40,16 +42,47 @@ namespace ChessGo
 
             try
             {
-                ConnectDelegate callback = ConnectCallback;
-                AsyncServerConnection.StartClient(callback);
             }
             catch
             {
                 errorMessage.text = "The server is currently offline. Please try again later.";
                 return;
             }
+            StartCoroutine(MatchMe());
+
 
             toggleGroup = GameObject.FindObjectOfType<ToggleGroup>();
+        }
+
+        IEnumerator MatchMe()
+        {
+            var msg = string.Format("{{ \"clientID\": \"{0}\"}}", "bob");
+            Debug.Log(msg);
+            using (UnityWebRequest www = GoodPost("http://localhost:8080/v1/matchMe", msg))
+            {
+                yield return www.Send();
+                Debug.Log(www.downloadHandler.isDone);
+                //Debug.Log(www.downloadHandler.);
+
+                if (www.isNetworkError || www.isHttpError)
+                {
+                    Debug.LogError(www.error);
+                }
+                else
+                {
+                    //Debug.Log("Match Me complete");
+                }
+            }
+        }
+
+        UnityWebRequest GoodPost(string url, string body) {
+           byte[] bytes = Encoding.ASCII.GetBytes(body);
+           var request             = new UnityWebRequest(url);
+           request.uploadHandler   = new UploadHandlerRaw(bytes);
+           request.downloadHandler = new DownloadHandlerBuffer();
+           request.method          = UnityWebRequest.kHttpVerbPOST;
+           request.timeout = 120;
+           return request;
         }
 
 
@@ -76,13 +109,6 @@ namespace ChessGo
         // Update is called once per frame
         void Update()
         {
-            if (AsyncServerConnection.messageQueue == null)
-            {
-                //errorMessage.text = "Server is Offline";
-            }
-            else if (AsyncServerConnection.messageQueue.Count > 0)
-                OnReceiveServerMessage(AsyncServerConnection.messageQueue.Dequeue());
-
             if (inQueue)
             {
                 queueTime += Time.deltaTime;
@@ -165,7 +191,7 @@ namespace ChessGo
 
             //id
             int myID = PlayerPrefs.GetInt("ID");
-            
+
             AsyncServerConnection.Send(Messages.FINDMATCH, difficulty.ToString(), myID.ToString(), nickname.text);
             AsyncServerConnection.Receive();
             StartQueueTimer();
