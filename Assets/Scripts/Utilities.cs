@@ -99,23 +99,23 @@ namespace ChessGo
             return true;
         }
 
-		public static int CountLiberties(Point p, char[,] board)
-		{
-			HashSet<Point> liberties = GetLiberties(p, board);
-			int count = 0;
-			foreach (Point l in liberties)
-			{
-				if (IsEmptyAt(l, board)) { count++; }
-			}
-			return count;
-		}
+	public static int CountLiberties(Point p, char[,] board)
+	{
+	    HashSet<Point> liberties = GetLiberties(p, board);
+	    int count = 0;
+	    foreach (Point l in liberties)
+	    {
+		if (IsEmptyAt(l, board)) { count++; }
+	    }
+	    return count;
+	}
 
         // Checks to see if white king is under check
         public static bool IsWhiteKingChecked(char[,] board)
         {
             //Find the black king
             Point kingPos = new Point();
-			bool kingFound = false;
+	    bool kingFound = false;
             for (int i = 0; i <= MAXROW && !kingFound; i++)
             {
                 for (int j = 0; j <= MAXCOL && !kingFound; j++)
@@ -129,10 +129,10 @@ namespace ChessGo
                 }
             }
 
-			if (!kingFound) {
-				//The king was not found, error
-				Debug.LogError("WHITE KING IS DEAD.");
-			}
+	    if (!kingFound) {
+		//The king was not found, error
+		Debug.LogError("WHITE KING IS DEAD.");
+	    }
             //Check to see if there is a legal move for white onto the white king.
 
             for (int i = 0; i <= MAXROW; i++)
@@ -142,8 +142,8 @@ namespace ChessGo
                     Point p = new Point(i, j);
                     if (IsValidMove(p, kingPos, board))
                     {
-						//White king is under attack!
-						Debug.LogError("WHITE KING IS CHECKED.");
+			//White king is under attack!
+			Debug.LogError("WHITE KING IS CHECKED.");
                         return true;
                     }
                 }
@@ -155,25 +155,25 @@ namespace ChessGo
         public static bool IsBlackKingChecked(char[,] board)
         {
             //Find the black king
-			Point kingPos =  new Point();
-			bool kingFound = false;
-			for (int i = 0; i <= MAXROW && !kingFound; i++)
+	    Point kingPos =  new Point();
+	    bool kingFound = false;
+	    for (int i = 0; i <= MAXROW && !kingFound; i++)
             {
-				for (int j = 0; j <= MAXCOL && !kingFound; j++)
+		for (int j = 0; j <= MAXCOL && !kingFound; j++)
                 {
                     if (board[i, j] == 'K')
                     {
                         //Black King Found
-						kingPos = new Point(i, j);
-						kingFound = true;
+			kingPos = new Point(i, j);
+			kingFound = true;
                     }
                 }
             }
-			
-			if (!kingFound) {
-				//The king was not found, error
-				Debug.LogError("WHITE KING IS DEAD.");
-			}
+
+	    if (!kingFound) {
+		//The king was not found, error
+		Debug.LogError("WHITE KING IS DEAD.");
+	    }
             //Check to see if there is a legal move for white onto the black king.
 
             for (int i = 0; i <= MAXROW; i++)
@@ -183,253 +183,249 @@ namespace ChessGo
                     Point p = new Point(i, j);
                     if (IsValidMove(p, kingPos, board))
                     {
-						//Black king is under attack!
-						Debug.LogError("BLACK KING IS CHECKED.");
+			//Black king is under attack!
+			Debug.LogError("BLACK KING IS CHECKED.");
                         return true;
                     }
                 }
             }
-			//TODO: Toggle condition flags
-			return (CountLiberties(kingPos, board) == 1);
-		}
-		
-		public static bool IsBlackCheckmated(char[,] board)
+	    //TODO: Toggle condition flags
+	    return (CountLiberties(kingPos, board) == 1);
+	}
+
+	public static bool IsBlackCheckmated(char[,] board)
+	{
+
+	    if (IsBlackKingChecked (board)) {
+
+		Point kingPos = new Point();
+		for (int i = 0; i <= MAXROW; i++)
 		{
-
-			if (IsBlackKingChecked (board)) {
-
-				Point kingPos = new Point();
-				for (int i = 0; i <= MAXROW; i++)
-				{
-					for (int j = 0; j <= MAXCOL; j++)
-					{
-						if (board[i, j] == 'K')
-						{
-							//Black King Found
-							kingPos = new Point(i, j);
-							break;
-						}
-					}
-				}
-
-				//First: Attempt to move the king out of harm's way
-				for(int i = -1; i <= 1; i++)
-				{
-					for(int j = -1; j<=1; j++)
-					{
-						//Try to move the king somewhere
-						char[,] attemptBoard = (char[,])board.Clone();
-						int newRow = kingPos.row+i;
-						int newCol = kingPos.col+j;
-						Point newPos = new Point(newRow, newCol);
-						if( newRow >= 0 && newRow <= MAXROW && newCol >= 0 && newCol <= MAXCOL && !IsBlackAt(newPos, board) )
-						{
-							//Check king escape paths
-							attemptBoard[kingPos.row, kingPos.col] = '\0';
-							attemptBoard[newRow, newCol] = 'K';
-							//Try escape path, if it get king out of check, then black is not checkmated
-							if( !IsBlackKingChecked(attemptBoard) ) { return false; }
-						}
-					}
-				}
-				//King cannot escape by moving, find attackers
-				//Locating white attackers
-
-				List<Point> attackers = new List<Point>();
-				for (int i = 0; i <= MAXROW; i++)
-				{
-					for (int j = 0; j <= MAXCOL; j++)
-					{
-						Point curPos = new Point(i, j);
-						if(IsWhiteAt(curPos, board))
-						{
-							if(IsValidMove(curPos, kingPos, board))
-							{
-								//curPos contains a piece that can attack the king
-								attackers.Add(curPos);
-							}
-						}
-					}
-				}
-
-				//White attacker(s) located, try to stop them from attacking by killing them
-				for (int i = 0; i <= MAXROW; i++)
-				{
-					for (int j = 0; j <= MAXCOL; j++)
-					{
-						Point curPos = new Point(i, j);
-						if(IsBlackAt(curPos, board))
-						{
-							foreach(Point a in attackers)
-							{
-								if(IsValidMove(curPos, a, board))
-								{
-									//Check to see if defense will work
-									char[,] attemptBoard = (char[,])board.Clone();
-									attemptBoard[a.row, a.col] = board[curPos.row, curPos.col];
-									attemptBoard[curPos.row, curPos.col] = '\0';
-									//Try defense, if it get king out of check, then black is not checkmated
-									if( !IsBlackKingChecked(attemptBoard) ) { return false; }
-								}
-							}
-						}
-					}
-				}
-
-				// Attacker(s) not killable; try blocking with go stone
-				// Determine possible defenses through brute force; may be inefficient
-				// Try only as a last resort.
-
-				foreach(Point a in attackers)
-				{
-					//Try dropping a go stone in the path of the attacker, then see if it resolves the check
-					//Intersection defense only works against rooks, bishops, and queens.
-					if( board[a.row, a.col] == 'b' || board[a.row, a.col] == 'r' || board[a.row, a.col] == 'q' )
-					{
-						//Try to defend all 
-						List<Point> intercept = GetValidDestinations(a, board);
-						foreach(Point i in intercept)
-						{
-							char[,] attemptBoard = (char[,])board.Clone();
-							if( attemptBoard[i.row, i.col] == '\0' )
-							{
-								//Try a go piece defense
-								attemptBoard[i.row, i.col] = 'S';
-								if( !IsBlackKingChecked(attemptBoard) ) { return false; }
-							}
-						}
-					}
-				}
-
-
-				//All escape attempts failed, black king is checkmated
-				Debug.LogError("BLACK KING IS CHECKMATED. GAME OVER.");
-				return true;
-			} else {
-				//Black king was not checked
-				return false;
+		    for (int j = 0; j <= MAXCOL; j++)
+		    {
+			if (board[i, j] == 'K')
+			{
+			    //Black King Found
+			    kingPos = new Point(i, j);
+			    break;
 			}
+		    }
 		}
 
-
-		public static bool IsWhiteCheckmated(char[,] board)
+		//First: Attempt to move the king out of harm's way
+		for(int i = -1; i <= 1; i++)
 		{
-			if (IsWhiteKingChecked (board)) {
-				
-				Point kingPos = new Point();
-				bool kingFound = false;
-				for (int i = 0; i <= MAXROW && !kingFound; i++)
-				{
-					for (int j = 0; j <= MAXCOL && !kingFound; j++)
-					{
-						if (board[i, j] == 'k')
-						{
-							//White King Found
-							kingPos = new Point(i, j);
-							kingFound = true;
-						}
-					}
-				}
-				
-				//First: Attempt to move the king out of harm's way
-				for(int i = -1; i <= 1; i++)
-				{
-					for(int j = -1; j<=1; j++)
-					{
-						//Try to move the king somewhere
-						char[,] attemptBoard = (char[,])board.Clone();
-						int newRow = kingPos.row+i;
-						int newCol = kingPos.col+j;
-						Point newPos = new Point(newRow, newCol);
-						if( newRow >= 0 && newRow <= MAXROW && newCol >= 0 && newCol <= MAXCOL && !IsWhiteAt(newPos, board) )
-						{
-							//Check king escape paths
-							attemptBoard[kingPos.row, kingPos.col] = '\0';
-							attemptBoard[newRow, newCol] = 'k';
-							//Try escape path, if it get king out of check, then black is not checkmated
-							if( !IsWhiteKingChecked(attemptBoard) ) { return false; }
-						}
-					}
-				}
-				//King cannot escape by moving, find attackers
-				//Locating white attackers
-				List<Point> attackers = new List<Point>();
-				for (int i = 0; i <= MAXROW; i++)
-				{
-					for (int j = 0; j <= MAXCOL; j++)
-					{
-						Point curPos = new Point(i, j);
-						if(IsBlackAt(curPos, board))
-						{
-							if(IsValidMove(curPos, kingPos, board))
-							{
-								//curPos contains a piece that can attack the king
-								attackers.Add(curPos);
-							}
-						}
-					}
-				}
-				
-				//White attacker(s) located, try to stop them from attacking by killing them
-				for (int i = 0; i <= MAXROW; i++)
-				{
-					for (int j = 0; j <= MAXCOL; j++)
-					{
-						Point curPos = new Point(i, j);
-						if(IsWhiteAt(curPos, board))
-						{
-							foreach(Point a in attackers)
-							{
-								if(IsValidMove(curPos, a, board))
-								{
-									//Check to see if defense will work
-									char[,] attemptBoard = (char[,])board.Clone();
-									attemptBoard[a.row, a.col] = board[curPos.row, curPos.col];
-									attemptBoard[curPos.row, curPos.col] = '\0';
-									//Try defense, if it get king out of check, then black is not checkmated
-									if( !IsWhiteKingChecked(attemptBoard) ) { return false; }
-								}
-							}
-						}
-					}
-				}
-				
-				// Attacker(s) not killable; try blocking with go stone
-				// Determine possible defenses through brute force; may be inefficient
-				// Try only as a last resort.
-				
-				foreach(Point a in attackers)
-				{
-					//Try dropping a go stone in the path of the attacker, then see if it resolves the check
-					//Intersection defense only works against rooks, bishops, and queens.
-					if( board[a.row, a.col] == 'B' || board[a.row, a.col] == 'R' || board[a.row, a.col] == 'Q' )
-					{
-						//Try to defend all 
-						List<Point> intercept = GetValidDestinations(a, board);
-						foreach(Point i in intercept)
-						{
-							char[,] attemptBoard = (char[,])board.Clone();
-							if( attemptBoard[i.row, i.col] == '\0' )
-							{
-								//Try a go piece defense
-								attemptBoard[i.row, i.col] = 's';
-								if( !IsWhiteKingChecked(attemptBoard) ) { return false; }
-							}
-						}
-					}
-				}
-				
-				
-				//All escape attempts failed, white king is checkmated
-
-				//TODO: Toggle condition flags to end game?
-				Debug.LogError("WHITE KING IS CHECKMATED. GAME OVER.");
-				return true;
-			} else {
-				//white king was not checked, no checkmate
-				return false;
+		    for(int j = -1; j<=1; j++)
+		    {
+			//Try to move the king somewhere
+			char[,] attemptBoard = (char[,])board.Clone();
+			int newRow = kingPos.row+i;
+			int newCol = kingPos.col+j;
+			Point newPos = new Point(newRow, newCol);
+			if( newRow >= 0 && newRow <= MAXROW && newCol >= 0 && newCol <= MAXCOL && !IsBlackAt(newPos, board) )
+			{
+			    //Check king escape paths
+			    attemptBoard[kingPos.row, kingPos.col] = '\0';
+			    attemptBoard[newRow, newCol] = 'K';
+			    //Try escape path, if it get king out of check, then black is not checkmated
+			    if( !IsBlackKingChecked(attemptBoard) ) { return false; }
 			}
+		    }
 		}
+		//King cannot escape by moving, find attackers
+		//Locating white attackers
+
+		List<Point> attackers = new List<Point>();
+		for (int i = 0; i <= MAXROW; i++)
+		{
+		    for (int j = 0; j <= MAXCOL; j++)
+		    {
+			Point curPos = new Point(i, j);
+			if(IsWhiteAt(curPos, board))
+			{
+			    if(IsValidMove(curPos, kingPos, board))
+			    {
+				//curPos contains a piece that can attack the king
+				attackers.Add(curPos);
+			    }
+			}
+		    }
+		}
+
+		//White attacker(s) located, try to stop them from attacking by killing them
+		for (int i = 0; i <= MAXROW; i++)
+		{
+		    for (int j = 0; j <= MAXCOL; j++)
+		    {
+			Point curPos = new Point(i, j);
+			if(IsBlackAt(curPos, board))
+			{
+			    foreach(Point a in attackers)
+			    {
+				if(IsValidMove(curPos, a, board))
+				{
+				    //Check to see if defense will work
+				    char[,] attemptBoard = (char[,])board.Clone();
+				    attemptBoard[a.row, a.col] = board[curPos.row, curPos.col];
+				    attemptBoard[curPos.row, curPos.col] = '\0';
+				    //Try defense, if it get king out of check, then black is not checkmated
+				    if( !IsBlackKingChecked(attemptBoard) ) { return false; }
+				}
+			    }
+			}
+		    }
+		}
+
+		// Attacker(s) not killable; try blocking with go stone
+		// Determine possible defenses through brute force; may be inefficient
+		// Try only as a last resort.
+
+		foreach(Point a in attackers)
+		{
+		    //Try dropping a go stone in the path of the attacker, then see if it resolves the check
+		    //Intersection defense only works against rooks, bishops, and queens.
+		    if( board[a.row, a.col] == 'b' || board[a.row, a.col] == 'r' || board[a.row, a.col] == 'q' )
+		    {
+			//Try to defend all 
+			List<Point> intercept = GetValidDestinations(a, board);
+			foreach(Point i in intercept)
+			{
+			    char[,] attemptBoard = (char[,])board.Clone();
+			    if( attemptBoard[i.row, i.col] == '\0' )
+			    {
+				//Try a go piece defense
+				attemptBoard[i.row, i.col] = 'S';
+				if( !IsBlackKingChecked(attemptBoard) ) { return false; }
+			    }
+			}
+		    }
+		}
+
+
+		//All escape attempts failed, black king is checkmated
+		Debug.LogError("BLACK KING IS CHECKMATED. GAME OVER.");
+		return true;
+	    } else {
+		//Black king was not checked
+		return false;
+	    }
+	}
+
+
+	public static bool IsWhiteCheckmated(char[,] board)
+	{
+	    if (IsWhiteKingChecked (board)) {
+
+		Point kingPos = new Point();
+		bool kingFound = false;
+		for (int i = 0; i <= MAXROW && !kingFound; i++)
+		{
+		    for (int j = 0; j <= MAXCOL && !kingFound; j++)
+		    {
+			if (board[i, j] == 'k')
+			{
+			    //White King Found
+			    kingPos = new Point(i, j);
+			    kingFound = true;
+			}
+		    }
+		}
+
+		//First: Attempt to move the king out of harm's way
+		for(int i = -1; i <= 1; i++)
+		{
+		    for(int j = -1; j<=1; j++)
+		    {
+			//Try to move the king somewhere
+			char[,] attemptBoard = (char[,])board.Clone();
+			int newRow = kingPos.row+i;
+			int newCol = kingPos.col+j;
+			Point newPos = new Point(newRow, newCol);
+			if( newRow >= 0 && newRow <= MAXROW && newCol >= 0 && newCol <= MAXCOL && !IsWhiteAt(newPos, board) )
+			{
+			    //Check king escape paths
+			    attemptBoard[kingPos.row, kingPos.col] = '\0';
+			    attemptBoard[newRow, newCol] = 'k';
+			    //Try escape path, if it get king out of check, then black is not checkmated
+			    if( !IsWhiteKingChecked(attemptBoard) ) { return false; }
+			}
+		    }
+		}
+		//King cannot escape by moving, find attackers
+		//Locating white attackers
+		List<Point> attackers = new List<Point>();
+		for (int i = 0; i <= MAXROW; i++)
+		{
+		    for (int j = 0; j <= MAXCOL; j++)
+		    {
+			Point curPos = new Point(i, j);
+			if(IsBlackAt(curPos, board))
+			{
+			    if(IsValidMove(curPos, kingPos, board))
+			    {
+				//curPos contains a piece that can attack the king
+				attackers.Add(curPos);
+			    }
+			}
+		    }
+		}
+
+		//White attacker(s) located, try to stop them from attacking by killing them
+		for (int i = 0; i <= MAXROW; i++)
+		{
+		    for (int j = 0; j <= MAXCOL; j++)
+		    {
+			Point curPos = new Point(i, j);
+			if(IsWhiteAt(curPos, board))
+			{
+			    foreach(Point a in attackers)
+			    {
+				if(IsValidMove(curPos, a, board))
+				{
+				    //Check to see if defense will work
+				    char[,] attemptBoard = (char[,])board.Clone();
+				    attemptBoard[a.row, a.col] = board[curPos.row, curPos.col];
+				    attemptBoard[curPos.row, curPos.col] = '\0';
+				    //Try defense, if it get king out of check, then black is not checkmated
+				    if( !IsWhiteKingChecked(attemptBoard) ) { return false; }
+				}
+			    }
+			}
+		    }
+		}
+
+		// Attacker(s) not killable; try blocking with go stone
+		// Determine possible defenses through brute force; may be inefficient
+		// Try only as a last resort.
+		foreach(Point a in attackers)
+		{
+		    //Try dropping a go stone in the path of the attacker, then see if it resolves the check
+		    //Intersection defense only works against rooks, bishops, and queens.
+		    if( board[a.row, a.col] == 'B' || board[a.row, a.col] == 'R' || board[a.row, a.col] == 'Q' )
+		    {
+			//Try to defend all 
+			List<Point> intercept = GetValidDestinations(a, board);
+			foreach(Point i in intercept)
+			{
+			    char[,] attemptBoard = (char[,])board.Clone();
+			    if( attemptBoard[i.row, i.col] == '\0' )
+			    {
+				//Try a go piece defense
+				attemptBoard[i.row, i.col] = 's';
+				if( !IsWhiteKingChecked(attemptBoard) ) { return false; }
+			    }
+			}
+		    }
+		}
+		//All escape attempts failed, white king is checkmated
+		//TODO: Toggle condition flags to end game?
+		Debug.LogError("WHITE KING IS CHECKMATED. GAME OVER.");
+		return true;
+	    } else {
+		//white king was not checked, no checkmate
+		return false;
+	    }
+	}
 
         public static char GetCharForPiece(GameObject o)
         {
