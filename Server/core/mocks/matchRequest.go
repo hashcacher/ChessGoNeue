@@ -47,20 +47,6 @@ func (mr *MockMatchRequestsMockRecorder) Store(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockMatchRequests)(nil).Store), arg0)
 }
 
-// FindAllMatchRequestsByUserId mocks base method
-func (m *MockMatchRequests) FindAllMatchRequestsByUserId(userID int) []core.MatchRequest {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindAllMatchRequestsByUserId", userID)
-	ret0, _ := ret[0].([]core.MatchRequest)
-	return ret0
-}
-
-// FindAllMatchRequestsByUserId indicates an expected call of FindAllMatchRequestsByUserId
-func (mr *MockMatchRequestsMockRecorder) FindAllMatchRequestsByUserId(userID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllMatchRequestsByUserId", reflect.TypeOf((*MockMatchRequests)(nil).FindAllMatchRequestsByUserId), userID)
-}
-
 // FindMatchForUser mocks base method
 func (m *MockMatchRequests) FindMatchForUser(userID int) core.MatchRequest {
 	m.ctrl.T.Helper()
@@ -90,17 +76,15 @@ func (mr *MockMatchRequestsMockRecorder) ListenForGameCreatedNotify(userID inter
 }
 
 // NotifyGameCreated mocks base method
-func (m *MockMatchRequests) NotifyGameCreated(userID int) int {
+func (m *MockMatchRequests) NotifyGameCreated(userID, gameID int) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyGameCreated", userID)
-	ret0, _ := ret[0].(int)
-	return ret0
+	m.ctrl.Call(m, "NotifyGameCreated", userID, gameID)
 }
 
 // NotifyGameCreated indicates an expected call of NotifyGameCreated
-func (mr *MockMatchRequestsMockRecorder) NotifyGameCreated(userID interface{}) *gomock.Call {
+func (mr *MockMatchRequestsMockRecorder) NotifyGameCreated(userID, gameID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyGameCreated", reflect.TypeOf((*MockMatchRequests)(nil).NotifyGameCreated), userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyGameCreated", reflect.TypeOf((*MockMatchRequests)(nil).NotifyGameCreated), userID, gameID)
 }
 
 // Delete mocks base method

@@ -15,13 +15,12 @@ type MatchRequest struct {
 // MatchRequests is the use case for Match entitiy
 type MatchRequests interface {
 	Store(MatchRequest) error
-	FindAllMatchRequestsByUserId(userID int) []MatchRequest
 	// Go through MatchRequests and see if there is a valid match
 	FindMatchForUser(userID int) MatchRequest
 	// Block and listen for a notification saying a game was created for you
 	ListenForGameCreatedNotify(userID int) (gameID int)
 	// Notify someone who is listening that a game was created for them
-	NotifyGameCreated(userID int) (gameID int)
+	NotifyGameCreated(userID, gameID int)
 	Delete(id int) (deleted int, err error)
 }
 
@@ -77,10 +76,12 @@ func (i *MatchRequestsInteractor) MatchMe(clientID string) (gameID int, err erro
 		BlackUser: matchRequest.User,
 	}
 	// Store the new game
-	id, err := i.games.Store(game)
+	gameID, err = i.games.Store(game)
 	if err != nil {
 		return 0, err
 	}
-	// Return the id
-	return id, nil
+	// Notify other user
+	i.matchRequests.NotifyGameCreated(matchRequest.User, gameID)
+	// Return the gameID
+	return gameID, nil
 }

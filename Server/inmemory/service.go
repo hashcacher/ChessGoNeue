@@ -36,8 +36,8 @@ func (service *Webservice) GetUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%v", user)
 }
 
-// func (service *Webservice) matchMeHandler(w http.ResponseWriter, r *http.Request) {
-// 	userId, _ := strconv.Atoi(r.FormValue("userId"))
+// func (service *Webservice) MatchMe(w http.ResponseWriter, r *http.Request) {
+// 	clientID, _ := strconv.Atoi(r.FormValue("clientID"))
 // 	// Get and wait for a match
 // 	// Return the game
 // }

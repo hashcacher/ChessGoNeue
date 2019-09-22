@@ -79,6 +79,7 @@ func TestMatchMeSuccessWithInitialMatch(t *testing.T) {
 	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 	mockMatchRequests.EXPECT().FindMatchForUser(mockUser.ID).Return(mockMatchRequest)
 	mockMatchRequests.EXPECT().Delete(mockMatchRequest.ID).Return(1, nil)
+	mockMatchRequests.EXPECT().NotifyGameCreated(mockOtherUser.ID, mockGameID)
 
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
