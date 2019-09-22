@@ -2,3 +2,5 @@ Server
 Library
 Logs
 Temp
+build
+!build/license.ulf
