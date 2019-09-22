@@ -35,4 +35,4 @@ steps:
 artifacts:
   objects:
     location: "gs://chessgo/linux"
-    paths: ["/workspace/artifacts"]
+    paths: ["/workspace/artifacts/*"]
