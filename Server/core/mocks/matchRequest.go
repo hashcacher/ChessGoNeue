@@ -61,6 +61,48 @@ func (mr *MockMatchRequestsMockRecorder) FindAllMatchRequestsByUserId(userID int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllMatchRequestsByUserId", reflect.TypeOf((*MockMatchRequests)(nil).FindAllMatchRequestsByUserId), userID)
 }
 
+// FindMatchForUser mocks base method
+func (m *MockMatchRequests) FindMatchForUser(userID int) core.MatchRequest {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindMatchForUser", userID)
+	ret0, _ := ret[0].(core.MatchRequest)
+	return ret0
+}
+
+// FindMatchForUser indicates an expected call of FindMatchForUser
+func (mr *MockMatchRequestsMockRecorder) FindMatchForUser(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMatchForUser", reflect.TypeOf((*MockMatchRequests)(nil).FindMatchForUser), userID)
+}
+
+// ListenForGameCreatedNotify mocks base method
+func (m *MockMatchRequests) ListenForGameCreatedNotify(userID int) int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListenForGameCreatedNotify", userID)
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// ListenForGameCreatedNotify indicates an expected call of ListenForGameCreatedNotify
+func (mr *MockMatchRequestsMockRecorder) ListenForGameCreatedNotify(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenForGameCreatedNotify", reflect.TypeOf((*MockMatchRequests)(nil).ListenForGameCreatedNotify), userID)
+}
+
+// NotifyGameCreated mocks base method
+func (m *MockMatchRequests) NotifyGameCreated(userID int) int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NotifyGameCreated", userID)
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// NotifyGameCreated indicates an expected call of NotifyGameCreated
+func (mr *MockMatchRequestsMockRecorder) NotifyGameCreated(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyGameCreated", reflect.TypeOf((*MockMatchRequests)(nil).NotifyGameCreated), userID)
+}
+
 // Delete mocks base method
 func (m *MockMatchRequests) Delete(id int) (int, error) {
 	m.ctrl.T.Helper()

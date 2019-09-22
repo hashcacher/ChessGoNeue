@@ -154,3 +154,33 @@ func TestCreateGameErrorBlackNotFound(t *testing.T) {
 		t.Fatalf("Expected error, but call was succesful")
 	}
 }
+
+// CreateGame error if the store is unsuccesful for some reason
+func TestCreateGameErrorStoreUnsuccesful(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	expectErr := errors.New("store error")
+	mockGame := core.Game{WhiteUser: 1, BlackUser: 2}
+	mockUser1 := core.User{ID: 1, Username: "zac", ClientID: "mock-clientid-1"}
+	mockUser2 := core.User{ID: 2, Username: "greg", ClientID: "mock-clientid-2"}
+
+	// Create mocks
+	mockUsers := mocks.NewMockUsers(mockCtrl)
+	mockUsers.EXPECT().FindByID(1).Return(mockUser1, nil)
+	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
+	mockGames := mocks.NewMockGames(mockCtrl)
+	mockGames.EXPECT().Store(mockGame).Return(0, expectErr)
+
+	// Create interactor and inject mocks
+	interactor := core.NewGamesInteractor(mockGames, mockUsers)
+
+	_, err := interactor.Create(mockGame)
+	if err != nil {
+		if err.Error() != expectErr.Error() {
+			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
+		}
+	} else {
+		t.Fatalf("Expected error, but call was succesful")
+	}
+}
