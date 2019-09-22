@@ -6,6 +6,7 @@ using System.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 
 namespace ChessGo
 {
@@ -13,16 +14,13 @@ namespace ChessGo
     //in a collection of sample names
     public class MarkovNameGenerator
     {
-
-        //constructor
-        public MarkovNameGenerator() : this(File.ReadAllLines("Assets/Names.txt"), 2, 4)
+        public MarkovNameGenerator()
         {
-            
-        }
+            var namesFile = Resources.Load<TextAsset>("Names");
+            var sampleNames = namesFile.text.Split('\n');
 
-        //constructor
-        public MarkovNameGenerator(IEnumerable<string> sampleNames, int order, int minLength)
-        {
+            int order = 2;
+            int minLength = 4;
             //fix parameter values
             if (order < 1)
                 order = 1;
@@ -45,7 +43,7 @@ namespace ChessGo
                 }
             }
 
-            //Build chains            
+            //Build chains
             foreach (string word in _samples)
             {
                 for (int letter = 0; letter < word.Length - order; letter++)
@@ -69,7 +67,7 @@ namespace ChessGo
         {
             get
             {
-                //get a random token somewhere in middle of sample word                
+                //get a random token somewhere in middle of sample word
                 string s = "";
                 do
                 {
@@ -122,7 +120,7 @@ namespace ChessGo
         private Dictionary<string, List<char>> _chains = new Dictionary<string, List<char>>();
         private List<string> _samples = new List<string>();
         private List<string> _used = new List<string>();
-        private Random _rnd = new Random();
+        private System.Random _rnd = new System.Random();
         private int _order;
         private int _minLength;
 

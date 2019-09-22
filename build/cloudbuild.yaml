@@ -1,0 +1,37 @@
+steps:
+- name: gcr.io/cloud-builders/gcloud
+  args:
+  - kms
+  - decrypt
+  - --ciphertext-file=build/license.ulf.enc
+  - --plaintext-file=build/license.ulf
+  - --location=global
+  - --keyring=codestory
+  - --key=codestory-key
+- name: gcr.io/cloud-builders/docker
+  args:
+  - 'build'
+  - '-t'
+  - 'gcr.io/portfolio-239904/chessgoneue:$COMMIT_SHA'
+  - '-f'
+  - 'build/Dockerfile'
+  - '.'
+
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - "run"
+  - "-d"
+  - "--name"
+  - "build-container"
+  - "gcr.io/portfolio-239904/chessgoneue:$COMMIT_SHA"
+
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - "cp"
+  - "build-container:/app/build/artifacts"
+  - "."
+
+artifacts:
+  objects:
+    location: "gs://chessgo/linux"
+    paths: ["/workspace/artifacts"]

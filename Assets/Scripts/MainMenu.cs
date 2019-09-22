@@ -47,6 +47,7 @@ namespace ChessGo
 
             canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
             toggleGroup = GameObject.FindObjectOfType<ToggleGroup>();
+            nickname = GameObject.Find("Nickname Input").GetComponent<InputField>();
             playOnline = GameObject.Find("Online").GetComponent<Button>();
             errorMessage = GameObject.Find("Error Text").GetComponent<Text>();
 
@@ -73,14 +74,14 @@ namespace ChessGo
                 host = "localhost:8080";
             }
 
-            // Post our api
+            // Post to our api
             using (UnityWebRequest www = GoodPost(host + "/v1/matchMe", msg))
             {
                 yield return www.SendWebRequest();
 
                 if (www.isNetworkError) {
                     // Exponential backoff
-                    Debug.LogError("MatchMe return an error: " + www.error);
+                    Debug.LogError("MatchMe network error: " + www.error);
                     this.failedConnections++;
                     yield return new WaitForSeconds(Mathf.Pow(2f, this.failedConnections) / 10f * Random.Range(.5f, 1.0f));
 
