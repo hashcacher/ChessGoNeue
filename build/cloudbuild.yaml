@@ -1,4 +1,4 @@
-timeout: 1200s
+timeout: 1800s
 steps:
 - name: gcr.io/cloud-builders/gcloud
   args:
@@ -32,7 +32,5 @@ steps:
   - "build-container:/app/build/artifacts"
   - "."
 
-artifacts:
-  objects:
-    location: "gs://chessgo"
-    paths: ["/workspace/artifacts/linux/linux-chessgo-master", "/workspace/artifacts/linux/linux-chessgo-master_Data", "/workspace/artifacts/osx/osx-chessgo-master.app"]
+- name: 'gcr.io/cloud-builders/gsutil'
+  args: ['-m', 'cp', '-r', '/workspace/artifacts/*', 'gs://chessgo/master']
