@@ -15,12 +15,8 @@ type MatchRequest struct {
 // MatchRequests is the use case for Match entitiy
 type MatchRequests interface {
 	Store(MatchRequest) error
-	// Go through MatchRequests and see if there is a valid match
-	FindMatchForUser(userID int) MatchRequest
-	// Block and listen for a notification saying a game was created for you
-	ListenForGameCreatedNotify(userID int) (gameID int)
-	// Notify someone who is listening that a game was created for them
-	NotifyGameCreated(userID, gameID int)
+	// Find a match request for a specific user
+	FindMatchRequestByUserID(userID int) (MatchRequest, error)
 	Delete(id int) (deleted int, err error)
 }
 
@@ -42,9 +38,9 @@ func NewMatchRequestsInteractor(matchRequests MatchRequests, users Users, games 
 
 // MatchMe will take in a user, create a match request, and wait for a notification
 // saying a match was succesful
-func (i *MatchRequestsInteractor) MatchMe(clientID string) (gameID int, err error) {
+func (i *MatchRequestsInteractor) MatchMe(Secret string) (gameID int, err error) {
 	// Make sure user exists and get their info
-	user, err := i.users.FindByClientID(clientID)
+	user, err := i.users.FindBySecret(Secret)
 	isUserEmpty := reflect.DeepEqual(user, User{})
 	if err != nil {
 		return 0, err
@@ -53,35 +49,24 @@ func (i *MatchRequestsInteractor) MatchMe(clientID string) (gameID int, err erro
 		return 0, errors.New("could not find user with that client id")
 	}
 
-	// Does a valid match request from another user already exist?
-	matchRequest := i.matchRequests.FindMatchForUser(user.ID)
-	isMREmpty := reflect.DeepEqual(matchRequest, MatchRequest{})
-	// If the match request is empty, create one and waot
-	if isMREmpty {
-		// Create request
-		matchRequest := MatchRequest{User: user.ID}
-		i.matchRequests.Store(matchRequest)
-		// Listen (blocking) for notify
-		gameID := i.matchRequests.ListenForGameCreatedNotify(user.ID)
-		// Return gameID we were notified about
-		return gameID, nil
-	}
-
-	// Delete the match request
-	i.matchRequests.Delete(matchRequest.ID)
-	// Create a game
-	// TODO: randomize black and white
-	game := Game{
-		WhiteUser: user.ID,
-		BlackUser: matchRequest.User,
-	}
-	// Store the new game
-	gameID, err = i.games.Store(game)
+	// Make sure the user isn't already queued for a game by seeing if they have a match
+	// request created
+	matchRequest, err := i.matchRequests.FindMatchRequestByUserID(user.ID)
+	isMatchRequestEmpty := reflect.DeepEqual(matchRequest, MatchRequest{})
 	if err != nil {
 		return 0, err
 	}
-	// Notify other user
-	i.matchRequests.NotifyGameCreated(matchRequest.User, gameID)
+	if !isMatchRequestEmpty {
+		return 0, errors.New("you can only queue for one game at a time")
+	}
+
+	// Create request
+	newMatchRequest := MatchRequest{User: user.ID}
+	i.matchRequests.Store(newMatchRequest)
+
+	// Listen (blocking) for notify
+	gameID = i.games.ListenForGameCreatedNotification(user.ID)
+
 	// Return the gameID
 	return gameID, nil
 }

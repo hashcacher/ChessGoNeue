@@ -26,10 +26,10 @@ func NewWebservice(gameInteractor core.GamesInteractor, userInteractor core.User
 
 // GetUser retrieves a user
 func (service *Webservice) GetUser(w http.ResponseWriter, r *http.Request) {
-	clientID := r.FormValue("clientID")
-	user, _ := service.usersInteractor.FindByClientID(clientID)
+	Secret := r.FormValue("Secret")
+	user, _ := service.usersInteractor.FindBySecret(Secret)
 	// Check for empty
-	if user.ClientID == "" {
+	if user.Secret == "" {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
 	}
@@ -37,7 +37,7 @@ func (service *Webservice) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // func (service *Webservice) MatchMe(w http.ResponseWriter, r *http.Request) {
-// 	clientID, _ := strconv.Atoi(r.FormValue("clientID"))
+// 	Secret, _ := strconv.Atoi(r.FormValue("Secret"))
 // 	// Get and wait for a match
 // 	// Return the game
 // }

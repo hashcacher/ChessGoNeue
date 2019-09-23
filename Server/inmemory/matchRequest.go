@@ -12,7 +12,7 @@ type MatchRequests struct {
 func NewMatchRequests(matchRequests map[int]core.MatchRequest) MatchRequests {
 	return MatchRequests{
 		matchRequests,
-		notifiers: make(map[int]chan int),
+		make(map[int]chan int),
 	}
 }
 

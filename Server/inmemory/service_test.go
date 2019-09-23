@@ -13,7 +13,7 @@ func TestMatchMeOK(t *testing.T) {
 	s := service.NewWebservice()
 
 	req, err := http.NewRequest("POST", "/v1/matchMe",
-		bytes.NewReader([]byte(`{ "clientID": "1234" }`)))
+		bytes.NewReader([]byte(`{ "Secret": "1234" }`)))
 
 	if err != nil {
 		t.Fatal(err)
@@ -48,7 +48,7 @@ func TestMatchMeFindMatch(t *testing.T) {
 
 	// Client 1 sends matchme
 	req, err := http.NewRequest("POST", "/v1/matchMe",
-		bytes.NewReader([]byte(`{ "clientID": "1234" }`)))
+		bytes.NewReader([]byte(`{ "Secret": "1234" }`)))
 
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +70,7 @@ func TestMatchMeFindMatch(t *testing.T) {
 
 	// Client 2 sends matchme
 	req, err = http.NewRequest("POST", "/v1/matchMe",
-		bytes.NewReader([]byte(`{ "clientID": "5678" }`)))
+		bytes.NewReader([]byte(`{ "Secret": "5678" }`)))
 	if err != nil {
 		t.Fatal(err)
 	}

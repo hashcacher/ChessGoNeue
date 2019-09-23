@@ -9,7 +9,7 @@ import (
 
 // MatchMeRequest is the format of the request sent to this endpoint
 type MatchMeRequest struct {
-	ClientID string `json:"clientID"`
+	Secret string `json:"Secret"`
 }
 
 // MatchMeResponse is the format of the response sent from this endpoint
@@ -88,12 +88,12 @@ func (s *Server) matchMeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the client is already registered
-	if s.looking[matchMeReq.ClientID] != nil {
+	if s.looking[matchMeReq.Secret] != nil {
 		RespondOK(w) // Just ignore it
 	} else {
 		// Create channel that will get response
 		resChan := make(chan bool, 2)
-		s.looking[matchMeReq.ClientID] = resChan
+		s.looking[matchMeReq.Secret] = resChan
 
 		// Start a coroutine that sends a response once ready
 		go func(responseWriter http.ResponseWriter) {
@@ -106,22 +106,22 @@ func (s *Server) matchMeHandler(w http.ResponseWriter, r *http.Request) {
 		// Remove the channel if conn closes
 		// XXX doesnt seem to fire
 		closeNotify := w.(http.CloseNotifier).CloseNotify()
-		go func(clientID string) {
+		go func(Secret string) {
 			<-closeNotify
-			delete(s.looking, clientID)
-		}(matchMeReq.ClientID)
+			delete(s.looking, Secret)
+		}(matchMeReq.Secret)
 
 		// Check if we have 2 people to match
 		if len(s.looking) > 1 {
 			ct := 0
-			for clientID, resChan := range s.looking {
+			for Secret, resChan := range s.looking {
 				// Drop two messages in the channel:
 				// One to complete the handler and one for the goroutine
 				resChan <- true
 				resChan <- true
 				ct++
 
-				delete(s.looking, clientID)
+				delete(s.looking, Secret)
 
 				if ct == 2 {
 					break

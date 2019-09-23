@@ -14,17 +14,19 @@ func TestCreateGameOK(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	expectId := 1
+	mockGameID := 1
 	mockGame := core.Game{WhiteUser: 1, BlackUser: 2}
-	mockUser1 := core.User{ID: 1, Username: "zac", ClientID: "mock-clientid-1"}
-	mockUser2 := core.User{ID: 2, Username: "greg", ClientID: "mock-clientid-2"}
+	mockUser1 := core.User{ID: 1, Username: "zac", Secret: "mock-Secret-1"}
+	mockUser2 := core.User{ID: 2, Username: "greg", Secret: "mock-Secret-2"}
 
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)
 	mockUsers.EXPECT().FindByID(1).Return(mockUser1, nil)
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
-	mockGames.EXPECT().Store(mockGame).Return(1, nil)
+	mockGames.EXPECT().Store(mockGame).Return(mockGameID, nil)
+	mockGames.EXPECT().NotifyGameCreated(mockUser1.ID, mockGameID).Return(nil)
+	mockGames.EXPECT().NotifyGameCreated(mockUser2.ID, mockGameID).Return(nil)
 
 	// Create interactor and inject mocks
 	interactor := core.NewGamesInteractor(mockGames, mockUsers)
@@ -33,8 +35,8 @@ func TestCreateGameOK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotId != expectId {
-		t.Fatalf("got: %v, expected: %v", gotId, expectId)
+	if gotId != mockGameID {
+		t.Fatalf("got: %v, expected: %v", gotId, mockGameID)
 	}
 }
 
@@ -43,20 +45,22 @@ func TestCreateGameOKResetBoard(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	expectId := 1
+	mockGameID := 1
 	board := [8][8]byte{}
 	board[0][0] = 1
 	mockGameInCall := core.Game{WhiteUser: 1, BlackUser: 2, Board: board}
 	mockGameExpectedToStore := core.Game{WhiteUser: 1, BlackUser: 2, Board: [8][8]byte{}}
-	mockUser1 := core.User{ID: 1, Username: "zac", ClientID: "mock-clientid-1"}
-	mockUser2 := core.User{ID: 2, Username: "greg", ClientID: "mock-clientid-2"}
+	mockUser1 := core.User{ID: 1, Username: "zac", Secret: "mock-Secret-1"}
+	mockUser2 := core.User{ID: 2, Username: "greg", Secret: "mock-Secret-2"}
 
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)
 	mockUsers.EXPECT().FindByID(1).Return(mockUser1, nil)
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
-	mockGames.EXPECT().Store(mockGameExpectedToStore).Return(1, nil)
+	mockGames.EXPECT().Store(mockGameExpectedToStore).Return(mockGameID, nil)
+	mockGames.EXPECT().NotifyGameCreated(mockUser1.ID, mockGameID).Return(nil)
+	mockGames.EXPECT().NotifyGameCreated(mockUser2.ID, mockGameID).Return(nil)
 
 	// Create interactor and inject mocks
 	interactor := core.NewGamesInteractor(mockGames, mockUsers)
@@ -65,8 +69,8 @@ func TestCreateGameOKResetBoard(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotId != expectId {
-		t.Fatalf("got: %v, expected: %v", gotId, expectId)
+	if gotId != mockGameID {
+		t.Fatalf("got: %v, expected: %v", gotId, mockGameID)
 	}
 
 }
@@ -105,7 +109,7 @@ func TestCreateGameErrorWhiteNotFound(t *testing.T) {
 	expectErr := errors.New("could not find white user by that id")
 	mockGame := core.Game{WhiteUser: 1, BlackUser: 2}
 	mockUser1 := core.User{}
-	mockUser2 := core.User{ID: 2, Username: "greg", ClientID: "mock-clientid-2"}
+	mockUser2 := core.User{ID: 2, Username: "greg", Secret: "mock-Secret-2"}
 
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)
@@ -133,7 +137,7 @@ func TestCreateGameErrorBlackNotFound(t *testing.T) {
 
 	expectErr := errors.New("could not find black user by that id")
 	mockGame := core.Game{WhiteUser: 1, BlackUser: 2}
-	mockUser1 := core.User{ID: 1, Username: "zac", ClientID: "mock-clientid-1"}
+	mockUser1 := core.User{ID: 1, Username: "zac", Secret: "mock-Secret-1"}
 	mockUser2 := core.User{}
 
 	// Create mocks
@@ -162,8 +166,8 @@ func TestCreateGameErrorStoreUnsuccesful(t *testing.T) {
 
 	expectErr := errors.New("store error")
 	mockGame := core.Game{WhiteUser: 1, BlackUser: 2}
-	mockUser1 := core.User{ID: 1, Username: "zac", ClientID: "mock-clientid-1"}
-	mockUser2 := core.User{ID: 2, Username: "greg", ClientID: "mock-clientid-2"}
+	mockUser1 := core.User{ID: 1, Username: "zac", Secret: "mock-Secret-1"}
+	mockUser2 := core.User{ID: 2, Username: "greg", Secret: "mock-Secret-2"}
 
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)

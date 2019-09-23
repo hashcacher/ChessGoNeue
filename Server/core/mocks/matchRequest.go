@@ -47,44 +47,19 @@ func (mr *MockMatchRequestsMockRecorder) Store(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockMatchRequests)(nil).Store), arg0)
 }
 
-// FindMatchForUser mocks base method
-func (m *MockMatchRequests) FindMatchForUser(userID int) core.MatchRequest {
+// FindMatchRequestByUserID mocks base method
+func (m *MockMatchRequests) FindMatchRequestByUserID(userID int) (core.MatchRequest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindMatchForUser", userID)
+	ret := m.ctrl.Call(m, "FindMatchRequestByUserID", userID)
 	ret0, _ := ret[0].(core.MatchRequest)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// FindMatchForUser indicates an expected call of FindMatchForUser
-func (mr *MockMatchRequestsMockRecorder) FindMatchForUser(userID interface{}) *gomock.Call {
+// FindMatchRequestByUserID indicates an expected call of FindMatchRequestByUserID
+func (mr *MockMatchRequestsMockRecorder) FindMatchRequestByUserID(userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMatchForUser", reflect.TypeOf((*MockMatchRequests)(nil).FindMatchForUser), userID)
-}
-
-// ListenForGameCreatedNotify mocks base method
-func (m *MockMatchRequests) ListenForGameCreatedNotify(userID int) int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListenForGameCreatedNotify", userID)
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// ListenForGameCreatedNotify indicates an expected call of ListenForGameCreatedNotify
-func (mr *MockMatchRequestsMockRecorder) ListenForGameCreatedNotify(userID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenForGameCreatedNotify", reflect.TypeOf((*MockMatchRequests)(nil).ListenForGameCreatedNotify), userID)
-}
-
-// NotifyGameCreated mocks base method
-func (m *MockMatchRequests) NotifyGameCreated(userID, gameID int) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "NotifyGameCreated", userID, gameID)
-}
-
-// NotifyGameCreated indicates an expected call of NotifyGameCreated
-func (mr *MockMatchRequestsMockRecorder) NotifyGameCreated(userID, gameID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyGameCreated", reflect.TypeOf((*MockMatchRequests)(nil).NotifyGameCreated), userID, gameID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMatchRequestByUserID", reflect.TypeOf((*MockMatchRequests)(nil).FindMatchRequestByUserID), userID)
 }
 
 // Delete mocks base method

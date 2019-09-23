@@ -18,6 +18,10 @@ type Games interface {
 	Store(Game) (id int, err error)
 	FindById(id int) (Game, error)
 	Update(Game) error
+	// Block and listen for a notification saying a game was created for the specified user
+	ListenForGameCreatedNotification(userID int) (gameID int)
+	// Notify the specified user that a game was created for them
+	NotifyGameCreated(userID, gameID int) error
 }
 
 // GamesInteractor is a struct that holds data to be injected for use cases
@@ -66,6 +70,10 @@ func (i *GamesInteractor) Create(game Game) (id int, err error) {
 	if err != nil {
 		return 0, err
 	}
+
+	// Notify users
+	i.games.NotifyGameCreated(game.WhiteUser, id)
+	i.games.NotifyGameCreated(game.BlackUser, id)
 
 	return id, nil
 }

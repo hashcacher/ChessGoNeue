@@ -76,3 +76,31 @@ func (mr *MockGamesMockRecorder) Update(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockGames)(nil).Update), arg0)
 }
+
+// ListenForGameCreatedNotification mocks base method
+func (m *MockGames) ListenForGameCreatedNotification(userID int) int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListenForGameCreatedNotification", userID)
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// ListenForGameCreatedNotification indicates an expected call of ListenForGameCreatedNotification
+func (mr *MockGamesMockRecorder) ListenForGameCreatedNotification(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenForGameCreatedNotification", reflect.TypeOf((*MockGames)(nil).ListenForGameCreatedNotification), userID)
+}
+
+// NotifyGameCreated mocks base method
+func (m *MockGames) NotifyGameCreated(userID, gameID int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NotifyGameCreated", userID, gameID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// NotifyGameCreated indicates an expected call of NotifyGameCreated
+func (mr *MockGamesMockRecorder) NotifyGameCreated(userID, gameID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyGameCreated", reflect.TypeOf((*MockGames)(nil).NotifyGameCreated), userID, gameID)
+}

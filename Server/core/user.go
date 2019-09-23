@@ -5,14 +5,14 @@ import "errors"
 // User stores user profile data
 type User struct {
 	ID       int    `json:"id"`
-	ClientID string `json:"clientID"`
+	Secret   string `json:"Secret"`
 	Username string `json:"username"`
 }
 
 // Users is the use case for User entitiy
 type Users interface {
 	Store(User) (id int, err error)
-	FindByClientID(clientID string) (User, error)
+	FindBySecret(Secret string) (User, error)
 	FindByID(id int) (User, error)
 	Update(User) error
 }
@@ -41,9 +41,9 @@ func (i *UsersInteractor) Create(user User) (int, error) {
 	return id, nil
 }
 
-// FindByClientID fetches the user from the repository and returns it
-func (i *UsersInteractor) FindByClientID(clientID string) (User, error) {
-	user, err := i.users.FindByClientID(clientID)
+// FindBySecret fetches the user from the repository and returns it
+func (i *UsersInteractor) FindBySecret(secret string) (User, error) {
+	user, err := i.users.FindBySecret(secret)
 	if err != nil {
 		return User{}, err
 	}

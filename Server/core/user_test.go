@@ -50,19 +50,19 @@ func TestCreateUserError(t *testing.T) {
 	}
 }
 
-// Find user by clientID is succesful if user exists
-func TestFindByClientIDOK(t *testing.T) {
+// Find user by Secret is succesful if user exists
+func TestFindBySecretOK(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockClientID := "mock-client-id"
-	mockUser := core.User{ID: 1, ClientID: mockClientID, Username: "zac"}
+	mockSecret := "mock-client-id"
+	mockUser := core.User{ID: 1, Secret: mockSecret, Username: "zac"}
 
 	mockUsers := mocks.NewMockUsers(mockCtrl)
-	mockUsers.EXPECT().FindByClientID(mockClientID).Return(mockUser, nil)
+	mockUsers.EXPECT().FindBySecret(mockSecret).Return(mockUser, nil)
 	interactor := core.NewUsersInteractor(mockUsers)
 
-	got, err := interactor.FindByClientID(mockClientID)
+	got, err := interactor.FindBySecret(mockSecret)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -71,19 +71,19 @@ func TestFindByClientIDOK(t *testing.T) {
 	}
 }
 
-// Find user by clientID error if db throws error
-func TestFindByClientIDError(t *testing.T) {
+// Find user by Secret error if db throws error
+func TestFindBySecretError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockClientID := "mock-client-id"
+	mockSecret := "mock-client-id"
 	expectErr := errors.New("mock database error")
 
 	mockUsers := mocks.NewMockUsers(mockCtrl)
-	mockUsers.EXPECT().FindByClientID(mockClientID).Return(core.User{}, expectErr)
+	mockUsers.EXPECT().FindBySecret(mockSecret).Return(core.User{}, expectErr)
 	interactor := core.NewUsersInteractor(mockUsers)
 
-	_, err := interactor.FindByClientID(mockClientID)
+	_, err := interactor.FindBySecret(mockSecret)
 	if err != nil {
 		if err.Error() != expectErr.Error() {
 			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
@@ -99,7 +99,7 @@ func TestFindByIDOK(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockID := 1
-	mockUser := core.User{ID: mockID, ClientID: "mock-client-id", Username: "zac"}
+	mockUser := core.User{ID: mockID, Secret: "mock-client-id", Username: "zac"}
 
 	mockUsers := mocks.NewMockUsers(mockCtrl)
 	mockUsers.EXPECT().FindByID(mockID).Return(mockUser, nil)
