@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . .
 
 # Build linux binary
-RUN mkdir -p build/artifacts && xvfb-run --auto-servernum --server-args='-screen 0 640x480x24' \
+RUN mkdir -p /app/build/artifacts && xvfb-run --auto-servernum --server-args='-screen 0 640x480x24' \
   /opt/Unity/Editor/Unity \
   -batchmode \
   -quit \
@@ -20,10 +20,15 @@ RUN mkdir -p build/artifacts && xvfb-run --auto-servernum --server-args='-screen
   -executeMethod BuildCommand.PerformBuild \
   -logFile /dev/stdout
 
-RUN makeself build/artifacts/linux \ # folder to zip up
-  linux_chessgo_master \ # name to give the self-extracting archive
-  ChessGo \ # Another name
-  ./linux-chessgo-master # Executable to launch
+# folder to zip up
+RUN makeself /app/build/artifacts/linux \
+  # name to give the self-extracting archive
+  linux_chessgo_master \
+  ChessGo \
+  # Executable to launch
+  ./linux-chessgo-master \
+    && rm -rf linux-chessgo-master linux-chessgo-master_Data
+
 
 # Build OSX binary
 RUN xvfb-run --auto-servernum --server-args='-screen 0 640x480x24' \
