@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: chessgo
-        image: gcr.io/portfolio-239904/chessgoplaylists@sha256:556d12c9f46203da53d4ba03cc7503646a3af6cc7d9d3dd99be826fe73bc99ee
+        image: gcr.io/portfolio-239904/github_hashcacher_chessgoneue:28f9fa6c58763f1e26ced783db0153ed9a559e1b
         ports:
         - containerPort: 8080
         env:

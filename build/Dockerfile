@@ -43,6 +43,7 @@ RUN xvfb-run --auto-servernum --server-args='-screen 0 640x480x24' \
   -customBuildName osx-chessgo-master \
   -customBuildPath build/artifacts/osx/ \
   -executeMethod BuildCommand.PerformBuild \
-  -logFile /dev/stdout
+  -logFile /dev/stdout \
 
-
+  && tar cvzf /app/build/artifacts/osx/osx_chessgo_master.tar.gz \
+              /app/build/artifacts/osx/osx-chessgo-master.app/ --remove-files 
