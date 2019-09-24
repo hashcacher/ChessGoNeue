@@ -12,7 +12,7 @@ type User struct {
 // Users is the use case for User entitiy
 type Users interface {
 	Store(User) (id int, err error)
-	FindBySecret(Secret string) (User, error)
+	FindBySecret(secret string) (User, error)
 	FindByID(id int) (User, error)
 	Update(User) error
 }

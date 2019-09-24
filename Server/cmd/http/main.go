@@ -10,11 +10,6 @@ import (
 
 func main() {
 
-	// Create in memory data stores
-	games := inmemory.NewGames(map[int]core.Game{})
-	users := inmemory.NewUsers()
-	matchRequests := inmemory.NewMatchRequests(map[int]core.MatchRequest{})
-
 	// Create interactors based on the data stores above
 	gameInteractor := core.NewGamesInteractor(&games, &users)
 	userInteractor := core.NewUsersInteractor(&users)
