@@ -17,6 +17,14 @@ namespace ChessGo
 
         }
 
+        public string GetServerHost() {
+            if (Application.isEditor) {
+                return "localhost:8080";
+            } else {
+                return "https://chessgo.xyz";
+            }
+        }
+
         // Returns in a list all orthogonally adjacent but not out of bound points
         public static HashSet<Point> GetAdjacentPoints(Point p)
         {

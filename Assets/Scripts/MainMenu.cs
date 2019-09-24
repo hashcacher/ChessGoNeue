@@ -34,15 +34,14 @@ namespace ChessGo
 
         public delegate void ConnectDelegate(bool success);
         private int failedConnections = 0;
-        private string playerID = "null";
 
         void Awake() {
             // Get / generate player ID
             if (PlayerPrefs.HasKey("ID")) {
-                this.playerID = PlayerPrefs.GetString("ID");
+                UnitySingleton.secret = PlayerPrefs.GetString("ID");
             } else {
-                this.playerID = RandomString(20);
-                PlayerPrefs.SetString("ID", this.playerID);
+                UnitySingleton.secret = RandomString(20);
+                PlayerPrefs.SetString("ID", UnitySingleton.secret);
             }
 
             canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
@@ -67,12 +66,9 @@ namespace ChessGo
 
         IEnumerator MatchMe() {
             var request = new MatchRequest();
-            request.clientID = playerID;
+            request.secret = UnitySingleton.secret;
             var msg = JsonUtility.ToJson(request);
-            var host = "https://chessgo.xyz";
-            if (Application.isEditor) {
-                host = "localhost:8080";
-            }
+            var host = GetServerHost()
 
             // Post to our api
             using (UnityWebRequest www = GoodPost(host + "/v1/matchMe", msg))

@@ -12,6 +12,8 @@ namespace ChessGo
             get { return instance; }
         }
         public bool amIWhite;
+        public string secret;
+        public string gameID;
         void Awake()
         {
             if (instance != null && instance != this)

@@ -4,5 +4,6 @@ namespace ChessGo
         public string err;
         public bool haveMatch;
         public bool areWhite;
+        public string gameID;
     }
 }

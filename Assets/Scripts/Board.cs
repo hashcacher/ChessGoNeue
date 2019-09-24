@@ -16,6 +16,8 @@ namespace ChessGo
 
         public GameObject table;
         public GameObject cameraLight;
+
+        //Prefabs
         public GameObject blackStone;
         public GameObject whiteStone;
         public GameObject blackPawn;
@@ -31,13 +33,10 @@ namespace ChessGo
         public GameObject blackKing;
         public GameObject whiteKing;
 
-        //speech bubbles
-        public SpeechBubble chatBubble;
-
         //2D chess pieces
         public GameObject chess2D;
 
-        //Highlights
+        //Highlights prefabs
         public GameObject validMove;
         public GameObject redSquareHighlight;
         public GameObject greenSquareHighlight;
@@ -50,10 +49,10 @@ namespace ChessGo
         public Button TopDownToggleButton;
         public Text myTurnText;
         public InputField inputChat;
-        public Text chatBox;
         public Text playerNamesText;
         public GameObject winScreen;
 
+        // State
         GameObject[,] pieces;
         GameObject[,] pieces2D;
         char[,] board;
@@ -92,49 +91,33 @@ namespace ChessGo
         int curHotspot = 6;
         bool topdown = false;
 
-        //if this is false, we're just debugging locally
+        //if this is false, we're just debugging locally or hotseat
         bool usingServer = false;
 	bool gameOver = false;
 
         public Sprite whiteTurnImage, blackTurnImage;
 
         private Transform canvas;
-        private RectTransform helpPanel, winPanel;
+        private RectTransform winPanel;
         private bool preventMoves;
 
-        // Use this for initialization
-        void Start()
-        {
-            usingServer = PlayerPrefs.GetInt("Hotseat") != 1 && 
-                            AsyncServerConnection.clientSocket != null &&
-                            AsyncServerConnection.clientSocket.Connected;
+        private short failedReceives, failedSends = 0;
+
+        void Awake() {
+            //Find objects
+            canvas = Camera.main.transform.Find("Canvas").transform;
+            winPanel = canvas.Find("Win Panel").GetComponent<RectTransform>();
+            winPanel.gameObject.SetActive(false);
 
             maxX = TopLeft.transform.position.x;
             maxZ = TopLeft.transform.position.z;
             minX = BottomRight.transform.position.x;
             minZ = BottomRight.transform.position.z;
 
-            //Find objects
-            canvas = Camera.main.transform.Find("Canvas").transform;
-            helpPanel = canvas.Find("Help Panel").GetComponent<RectTransform>();
-            winPanel = canvas.Find("Win Panel").GetComponent<RectTransform>();
-            helpPanel.gameObject.SetActive(false);
-            winPanel.gameObject.SetActive(false);
+            usingServer = PlayerPrefs.GetInt("Hotseat") != 1 &&
+                            AsyncServerConnection.clientSocket != null &&
+                            AsyncServerConnection.clientSocket.Connected;
 
-
-            // Send a start game message to the server
-            if (usingServer)
-            {
-                AsyncServerConnection.Send(Messages.STARTGAME);
-                AsyncServerConnection.Receive();
-
-                playerNamesText.text = Client.username + " vs ";
-            }
-            else
-            {
-                if (!IAmBlack)
-                    StartCoroutine(Rotate180(camera.transform));
-            }
 
             //set the width and height of the board
             w = getW();
@@ -151,9 +134,143 @@ namespace ChessGo
             pieces2D = new GameObject[nRows, nRows];
             highlights = new GameObject[nRows, nRows];
 
+            IAmBlack = !UnitySingleton.amIWhite
+
             Setup2D(); //shoots rays at the 2D pieces to get references.
             SetupPieces(pieces); //places the initial chess pieces
+        }
 
+
+        // Use this for initialization
+        void Start()
+        {
+            // Send a start game message to the server
+            if (usingServer)
+            {
+                StartCoroutine("ReceiveMoves");
+                playerNamesText.text = Client.username + " vs ";
+
+                if (IAmBlack) {
+                    curHotspot = 6;
+                    myTurn = false;
+                    myTurnText.enabled = false;
+                }
+                else
+                {
+                    Debug.Log("I am White!");
+                    curHotspot = 0;
+                    StartTurn();
+                }
+            }
+            else {
+                StartTurn();
+            }
+
+            // Rotate the board if we're white
+            if (!IAmBlack) {
+                StartCoroutine(Rotate180(camera.transform));
+            }
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+            if (myTurn && !preventMoves)
+            {
+                if(!UpdateToggleDrag()) //if we didn't pick something up or drop something.
+                    if(!grabbed && Input.GetMouseButtonDown(0))
+                        StartCoroutine(PlaceGoStone());
+
+                MouseOver(); //maybe call less frequently
+            }
+            if (Input.GetKeyDown("down")) { RotateCamera(); }
+        }
+
+
+
+	IEnumerator ReceiveMoves() {
+            while (true) {
+                var request = new GetMoveRequest();
+                request.secret = UnitySingleton.secret;
+                request.gameID = UnitySingleton.gameID;
+                var msg = JsonUtility.ToJson(request);
+                var host = GetServerHost(); // Post to our api
+                using (UnityWebRequest www = GoodPost(host + "/v1/getMove", msg))
+                {
+                    yield return www.SendWebRequest();
+
+                    if (www.isNetworkError) {
+                        // Exponential backoff
+                        Debug.LogError("ReceiveMoves network error: " + www.error);
+                        this.failedReceives++;
+                        yield return new WaitForSeconds(Mathf.Pow(2f, this.failedReceives) / 10f * Random.Range(.5f, 1.0f));
+
+                        if (this.failedReceives >= 10) {
+                            // TODO spinning beachball?
+                        } else {
+                            Debug.Error("Gave up on server");
+                            QuitGame();
+                        }
+                    } else if (www.isHttpError) {
+                        var response = JsonUtility.FromJson<GetMoveResponse>(www.downloadHandler.text);
+                        if (response != null) {
+                            Debug.Log("MatchMe error: " + response.err);
+                        }
+                    } else {
+                        this.failedReceives = 0;
+
+                        var response = JsonUtility.FromJson<GetMoveResponse>(www.downloadHandler.text);
+                        if (response != null) {
+                            if (response.move) {
+                                // Move received!
+                                MakeReceivedMove(response.move);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        int[] SquareToIndices(string square) {
+            return new int[] { int.Parse(square[0] - 'a'), int.Parse(square[1]) };
+        }
+
+        void MakeReceivedMove(string move) {
+            //get board coords
+            string[] squares = move.Split(',');
+            int[] fromIndices = SquareToIndices(squares[0]);
+            Point p1 = new Point(fromIndices[0], fromIndices[1]);
+
+            //the move was a Go stone placement
+            if (squares.Length == 1) {
+                PlaceGoStone(p1);
+            }
+
+            //the move was a chess move
+            else {
+                int[] toIndices = SquareToIndices(squares[1]);
+                Point p2 = new Point(toIndices[0], toIndices[1]);
+
+                //checks if move is valid, if so it updates board[][]
+                if (MovePieceBoard(p1, p2))
+                {
+                    Debug.Log("moving the actual table piece");
+                    //move gameobject to p2
+
+                    Transform piece = pieces[p1.row, p1.col].transform;
+                    MovePieceTable(piece, p1, p2);
+
+                    piece = pieces2D[p1.row, p1.col].transform;
+                    MovePieceTable2D(piece, p1, p2);
+
+                    CheckSurrounded(p2);
+                }
+                else
+                {
+                    Debug.LogError("Server sent us an invalid move");
+                }
+            }
             StartTurn();
         }
 
@@ -200,53 +317,6 @@ namespace ChessGo
         public void QuitGame()
         {
             SceneManager.LoadScene("MainMenu");
-        }
-
-        public void SubmitChat()
-        {
-            if (inputChat.text.Trim() == "")
-            {
-                Debug.Log("empty string");
-                return;
-            }
-
-            chatBox.text += "\n" + inputChat.text;
-
-            //speech bubbles
-            GameObject myKing = IAmBlack ? GameObject.Find("BlackKing(Clone)") : GameObject.Find("WhiteKing(Clone)");
-            SpeechBubble b;
-            if (myKing.transform.childCount == 0)
-            {
-                b = Instantiate(chatBubble) as SpeechBubble;
-                b.transform.parent = myKing.transform;
-                b.transform.position = myKing.transform.position;
-                //b.transform.position = new Vector3()
-            }
-            else
-            {
-                b = myKing.transform.GetComponentInChildren<SpeechBubble>() as SpeechBubble;
-
-            }
-
-            if (b == null)
-                Debug.LogError("Failed to get chat bubble");
-            else
-            {
-                b.gameObject.SetActive(true);
-                b.SetText(inputChat.text);
-            }
-
-            //send the chat message
-            if (usingServer)
-            {
-                AsyncServerConnection.Send(Messages.CHAT, inputChat.text);
-                AsyncServerConnection.Receive();
-            }
-
-            //reset the input box
-            inputChat.text = "";
-            inputChat.Select();
-
         }
 
         //shoots rays all the 2D chess models and 
@@ -434,7 +504,7 @@ namespace ChessGo
             else
                 return false;
         }
-        
+
         bool CurrentlyDraggingChessPiece()
         {
             return grabbed != null;
@@ -477,27 +547,6 @@ namespace ChessGo
             return pieces[row, col];
         }
 
-        // Update is called once per frame
-        void Update()
-        {
-            if (usingServer) {
-		if (AsyncServerConnection.messageQueue.Count > 0)
-		    OnReceiveServerMessage (AsyncServerConnection.messageQueue.Dequeue ());
-	    } else {
-
-	    }
-            if (myTurn && !preventMoves)
-            {
-                if(!UpdateToggleDrag()) //if we didn't pick something up or drop something.
-                    if(!grabbed && Input.GetMouseButtonDown(0))
-                        StartCoroutine(PlaceGoStone());
-
-                MouseOver(); //maybe call less frequently
-            }
-            if (Input.GetKeyDown("down")) { RotateCamera(); }
-            if (Input.GetKeyDown("return")) { SubmitChat(); }
-        }
-
         public void RotateCamera()
         {
             int nextHotspot = (IAmBlack ? (++curHotspot) : (--curHotspot)) % (cameraHotspots.transform.childCount - 1);
@@ -508,86 +557,6 @@ namespace ChessGo
         void RotateCamera(Transform t)
         {
             StartCoroutine(Utilities.SmoothMove(camera.transform, t, 1.0f));
-        }
-
-        void OnReceiveServerMessage(Message msg) //changed from object[] params
-        {
-            int message = msg.message;
-            string[] parameters = msg.parameters;
-
-            Debug.Log("Message received in Board");
-
-            switch (message)
-            {
-                case Messages.STARTGAME:
-                    {
-                        IAmBlack = AsyncServerConnection.FixParam(parameters[0]).Equals("1");
-                        if (!IAmBlack)
-                        {
-                            curHotspot = 6;
-                            myTurn = false;
-                            myTurnText.enabled = false;
-                            Debug.Log("I am White!");
-                            StartCoroutine(Rotate180(camera.transform));
-                            AsyncServerConnection.Receive();
-                        }
-                        else
-                        {
-                            curHotspot = 0;
-                            StartTurn();
-
-                        }
-                        break;
-                    }
-                //Execute's opponent's chess move.
-                case Messages.MOVE:
-                    {
-                        //escape the parameters
-                        string[] fromMove = parameters[0].ToString().Split(',');
-
-                        //get board coords
-                        Point p1 = new Point(int.Parse(fromMove[0]), int.Parse(fromMove[1]));
-                        //the move was a Go placement
-                        if (parameters.Length == 1)
-                        {
-                            PlaceGoStone(p1);
-                        }
-                        //the move was a chess move
-                        else
-                        {
-                            string[] toMove = parameters[1].ToString().Split(',');
-                            Point p2 = new Point(int.Parse(toMove[0]), int.Parse(toMove[1]));
-
-                            //checks if move is valid, if so it updates board[][]
-                            if (MovePieceBoard(p1, p2))
-                            {
-                                Debug.Log("moving the actual table piece");
-                                //move gameobject to p2
-
-                                Transform piece = pieces[p1.row, p1.col].transform;
-                                MovePieceTable(piece, p1, p2);
-
-                                piece = pieces2D[p1.row, p1.col].transform;
-                                MovePieceTable2D(piece, p1, p2);
-
-                                CheckSurrounded(p2);
-                            }
-                            else
-                            {
-                                Debug.LogError("Server sent us an invalid move");
-                            }
-                        }
-                        StartTurn();
-                        break;
-                    }
-                case Messages.CHAT:
-                    {
-                        //escape the parameters
-                        string chat = parameters[0].ToString();
-                        ReceiveChat(chat);
-                        break;
-                    }
-            }
         }
 
         private void StartTurn()
@@ -625,11 +594,6 @@ namespace ChessGo
             }
 
 
-        }
-
-        private void ReceiveChat(string msg)
-        {
-            chatBox.text += "\n" + msg;
         }
 
 
@@ -699,22 +663,52 @@ namespace ChessGo
             grabbed = null;
         }
 
-        void SendGoMoveToServer(Point p1)
-        {
-            if (!usingServer)
-                return;
-
-            AsyncServerConnection.Send(Messages.MOVE, p1.ToString());
-            AsyncServerConnection.Receive();
-        }
         void SendMoveToServer(Point p1, Point p2)
         {
             if (!usingServer)
                 return;
 
-            Debug.Log("Sending move " + p1 + " to " + p2);
-            AsyncServerConnection.Send(Messages.MOVE, p1.ToString(), p2.ToString());
-            AsyncServerConnection.Receive();
+            var request = new MakeMoveRequest();
+            request.secret = UnitySingleton.secret;
+            request.gameID = UnitySingleton.gameID;
+            request.move = p1.ToString();
+            if (p2) {
+                request.move += "," + p2.ToString();
+            }
+
+            var msg = JsonUtility.ToJson(request);
+            var host = GetServerHost(); // Post to our api
+            using (UnityWebRequest www = GoodPost(host + "/v1/makeMove", msg)) {
+                    yield return www.SendWebRequest();
+
+                    if (www.isNetworkError) {
+                        // Exponential backoff
+                        Debug.LogError("SendMove network error: " + www.error);
+                        this.failedSends++;
+                        yield return new WaitForSeconds(Mathf.Pow(2f, this.failedSends) / 10f * Random.Range(.5f, 1.0f));
+
+                        if (this.failedSends >= 10) {
+                            // TODO spinning beachball?
+                        } else {
+                            Debug.Error("Gave up on server");
+                            QuitGame();
+                        }
+                    } else if (www.isHttpError) {
+                        var response = JsonUtility.FromJson<SendMoveResponse>(www.downloadHandler.text);
+                        if (response != null) {
+                            Debug.Log("SendMove error: " + response.err);
+                        }
+                    } else {
+                        this.failedSends = 0;
+
+                        var response = JsonUtility.FromJson<SendMoveResponse>(www.downloadHandler.text);
+                        if (response != null) {
+                            if (!response.ok) {
+                                // TODO server rejected move
+                            }
+                        }
+                    }
+            }
         }
 
         bool Grab()
@@ -903,7 +897,7 @@ namespace ChessGo
                         {
                             //place either white or black Stone.
                             PlaceStone(p, IAmBlack ? 'S' : 's');
-                            SendGoMoveToServer(p);
+                            SendMoveToServer(p, null);
 
                             if (usingServer)
                                 EndTurn();
@@ -1042,44 +1036,44 @@ namespace ChessGo
 
 
         void KillAtPoint(Point p)
-		{
-			//Kills piece at point p
-			
-			if(board[p.row, p.col] == 'k' || board[p.row, p.col] == 'K') {
-				Debug.Log ("The Old King is dead, long live the King!");
-				//Remove from board and in-game piece as well.
-				Destroy(pieces[p.row, p.col]);
-				Destroy(pieces2D[p.row, p.col]);
-				board[p.row, p.col] = '\0';
-				StartCoroutine(VictoryAnimation());
-			}
-			else if (board [p.row, p.col] == '\0') {
-				Debug.Log ("Attempted to Kill Empty Position");
-			} else {
-				//Remove from board and in-game piece as well.
+        {
+            //Kills piece at point p
+
+            if(board[p.row, p.col] == 'k' || board[p.row, p.col] == 'K') {
+                Debug.Log ("The Old King is dead, long live the King!");
+                //Remove from board and in-game piece as well.
                 Destroy(pieces[p.row, p.col]);
                 Destroy(pieces2D[p.row, p.col]);
-				board[p.row, p.col] = '\0';
-			}
-		}
+                board[p.row, p.col] = '\0';
+                StartCoroutine(VictoryAnimation());
+            }
+            else if (board [p.row, p.col] == '\0') {
+                Debug.Log ("Attempted to Kill Empty Position");
+            } else {
+                //Remove from board and in-game piece as well.
+                Destroy(pieces[p.row, p.col]);
+                Destroy(pieces2D[p.row, p.col]);
+                board[p.row, p.col] = '\0';
+            }
+        }
 
-		//Checks the adjacent points, removing their group from game if the group is surrounded
-		public void CheckSurrounded(Point p)
-		{
-			if (!gameOver) {
-				HashSet<Point> affected = Utilities.GetAdjacentPoints (p);
-				foreach (Point a in affected) {
-					//See if the group has now been surrounded
-					if (Utilities.IsGroupDead (a, board)) {
-						//Kill the group
-						HashSet<Point> targets = Utilities.GetGroup (a, board);
-						foreach (Point t in targets) {
-							KillAtPoint (t);
-						}
-					}
-				}
-			}
-		}
+        //Checks the adjacent points, removing their group from game if the group is surrounded
+        public void CheckSurrounded(Point p)
+        {
+            if (!gameOver) {
+                HashSet<Point> affected = Utilities.GetAdjacentPoints (p);
+                foreach (Point a in affected) {
+                    //See if the group has now been surrounded
+                    if (Utilities.IsGroupDead (a, board)) {
+                        //Kill the group
+                        HashSet<Point> targets = Utilities.GetGroup (a, board);
+                        foreach (Point t in targets) {
+                            KillAtPoint (t);
+                        }
+                    }
+                }
+            }
+        }
 
         Vector3 CloneVector3(Vector3 v)
         {
@@ -1136,32 +1130,6 @@ namespace ChessGo
 
             CreatePiece(blackQueen, 5, 0);
             CreatePiece(blackKing, 6, 0);
-        }
-
-        public void ShowHelp()
-        {
-            helpPanel.gameObject.SetActive(true);
-            //Vector2 startPos = new Vector2(0, -300f);
-            //Vector2 endPos = new Vector2(0, 632f);
-            Vector3 startPos = new Vector3(0, 500, -20);
-            Vector3 endPos = new Vector3(0, -230, -20);
-            preventMoves = true;
-            StartCoroutine(Utilities.SmoothMoveUI(helpPanel, startPos, endPos, .5f));
-        }
-
-        public void CloseHelp()
-        {
-            StartCoroutine(CloseHelpHelper());
-        }
-
-        private IEnumerator CloseHelpHelper()
-        {
-            Vector3 startPos = new Vector3(0, -230, -20);
-            Vector3 endPos = new Vector3(0, -1230, -20);
-            StartCoroutine(Utilities.SmoothMoveUI(helpPanel, startPos, endPos, .5f));
-            yield return new WaitForSeconds(.5f);
-            helpPanel.gameObject.SetActive(false);
-            preventMoves = false;
         }
 
     }
