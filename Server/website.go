@@ -14,8 +14,8 @@ func (s *Server) webHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) poorMansHTML() string {
 	baseURL := "https://storage.cloud.google.com/chessgo/"
-	linuxURL := "master/linux/linux_chessgo_master"
-	osxURL := "master/osx/osx_chessgo_master"
+	linuxURL := "master/linux_chessgo_master"
+	osxURL := "master/osx-chessgo-master.app"
 
 	return fmt.Sprintf(`Welcome to ChessGo. Here are our beta clients to try:<br>
 	<a href="%s">ChessGo for Mac OSX</a><br>
