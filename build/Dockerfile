@@ -27,7 +27,9 @@ RUN makeself /app/build/artifacts/linux \
   ChessGo \
   # Executable to launch
   ./linux-chessgo-master \
-    && rm -rf linux-chessgo-master linux-chessgo-master_Data
+    # Replace the separate stuff with the combined archive
+    && rm -rf /app/build/artifacts/linux/* \
+    && mv linux_chessgo_master /app/build/artifacts/linux
 
 
 # Build OSX binary
