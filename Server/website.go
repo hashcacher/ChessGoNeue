@@ -22,7 +22,7 @@ func (s *Server) poorMansHTML() string {
 	<a href="%s">ChessGo for Mac OSX</a><br>
 	<a href="%s">ChessGo for Linux</a><br><br>
 	Email chessgoinfo@gmail.com for more info.
-	`, baseURL+linuxURL, baseURL+osxURL)
+	`, baseURL+osxURL, baseURL+linuxURL)
 }
 
 func (s *Server) dingHandler(w http.ResponseWriter, r *http.Request) {
