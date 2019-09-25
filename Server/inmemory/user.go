@@ -2,6 +2,7 @@ package inmemory
 
 import (
 	"errors"
+	"log"
 
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 )
@@ -36,7 +37,23 @@ func (r *Users) FindByID(id int) (core.User, error) {
 }
 
 func (r *Users) FindBySecret(secret string) (core.User, error) {
-	return r.secretUserMap[secret], nil
+	if secret == "" {
+		return core.User{}, errors.New("secret cannot be empty string")
+	}
+	user, ok := r.secretUserMap[secret]
+	// Create a new user if one doesn't exist with that secret
+	if !ok {
+		user = core.User{Secret: secret}
+		id, err := r.Store(user)
+		if err != nil {
+			return core.User{}, nil
+		}
+		user.ID = id
+		log.Printf("%v", user)
+		return user, nil
+	}
+	// Return the user
+	return user, nil
 }
 
 func (r *Users) Update(user core.User) error {

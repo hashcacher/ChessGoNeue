@@ -1,18 +1,20 @@
 package inmemory
 
-import "github.com/hashcacher/ChessGoNeue/Server/v2/core"
+import (
+	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
+)
 
 type Games struct {
 	autoIncrement int
 	games         map[int]core.Game
 	// Map from userID to notification channel
-	createdNotifiers map[int]chan int
+	storedEventsByUserID map[int]chan core.Game
 }
 
 func NewGames(games map[int]core.Game) Games {
 	return Games{
-		games:            games,
-		createdNotifiers: make(map[int]chan int),
+		games:                games,
+		storedEventsByUserID: make(map[int]chan core.Game),
 	}
 }
 
@@ -24,9 +26,32 @@ func (g *Games) getNextAutoincrementID() int {
 func (g *Games) Store(game core.Game) (int, error) {
 	game.ID = g.getNextAutoincrementID()
 	g.games[game.ID] = game
-	g.NotifyGameCreated(game.WhiteUser, game.ID)
-	g.NotifyGameCreated(game.BlackUser, game.ID)
+	// Notify for white user
+	notifyChannel, ok := g.storedEventsByUserID[game.WhiteUser]
+	if !ok {
+		notifyChannel = make(chan core.Game, 2)
+		g.storedEventsByUserID[game.WhiteUser] = notifyChannel
+	}
+	notifyChannel <- game
+	// Notify for black user
+	notifyChannel, ok = g.storedEventsByUserID[game.BlackUser]
+	if !ok {
+		notifyChannel = make(chan core.Game, 2)
+		g.storedEventsByUserID[game.BlackUser] = notifyChannel
+	}
+	notifyChannel <- game
+	// Return
 	return game.ID, nil
+}
+
+func (g *Games) ListenForStoreByUserID(userID int) (game core.Game, err error) {
+	notifyChannel, ok := g.storedEventsByUserID[userID]
+	// If the channel doesn't exist, create it
+	if !ok {
+		notifyChannel = make(chan core.Game, 2)
+		g.storedEventsByUserID[userID] = notifyChannel
+	}
+	return <-notifyChannel, nil
 }
 
 func (g *Games) FindById(id int) (core.Game, error) {
@@ -35,18 +60,5 @@ func (g *Games) FindById(id int) (core.Game, error) {
 
 func (g *Games) Update(game core.Game) error {
 	g.games[game.ID] = game
-	return nil
-}
-
-func (g *Games) ListenForGameCreatedNotification(userID int) (gameID int) {
-	notifyChannel := make(chan int, 2)
-	g.createdNotifiers[userID] = notifyChannel
-	return <-notifyChannel
-}
-
-func (g *Games) NotifyGameCreated(userID, gameID int) error {
-	notifyChannel := g.createdNotifiers[userID]
-	notifyChannel <- gameID
-	delete(g.createdNotifiers, userID)
 	return nil
 }

@@ -47,19 +47,49 @@ func (mr *MockMatchRequestsMockRecorder) Store(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockMatchRequests)(nil).Store), arg0)
 }
 
-// FindMatchRequestByUserID mocks base method
-func (m *MockMatchRequests) FindMatchRequestByUserID(userID int) (core.MatchRequest, error) {
+// ListenForStore mocks base method
+func (m *MockMatchRequests) ListenForStore() (core.MatchRequest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindMatchRequestByUserID", userID)
+	ret := m.ctrl.Call(m, "ListenForStore")
 	ret0, _ := ret[0].(core.MatchRequest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FindMatchRequestByUserID indicates an expected call of FindMatchRequestByUserID
-func (mr *MockMatchRequestsMockRecorder) FindMatchRequestByUserID(userID interface{}) *gomock.Call {
+// ListenForStore indicates an expected call of ListenForStore
+func (mr *MockMatchRequestsMockRecorder) ListenForStore() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMatchRequestByUserID", reflect.TypeOf((*MockMatchRequests)(nil).FindMatchRequestByUserID), userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenForStore", reflect.TypeOf((*MockMatchRequests)(nil).ListenForStore))
+}
+
+// FindByUserID mocks base method
+func (m *MockMatchRequests) FindByUserID(userID int) (core.MatchRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByUserID", userID)
+	ret0, _ := ret[0].(core.MatchRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByUserID indicates an expected call of FindByUserID
+func (mr *MockMatchRequestsMockRecorder) FindByUserID(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByUserID", reflect.TypeOf((*MockMatchRequests)(nil).FindByUserID), userID)
+}
+
+// FindAll mocks base method
+func (m *MockMatchRequests) FindAll() ([]core.MatchRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAll")
+	ret0, _ := ret[0].([]core.MatchRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAll indicates an expected call of FindAll
+func (mr *MockMatchRequestsMockRecorder) FindAll() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAll", reflect.TypeOf((*MockMatchRequests)(nil).FindAll))
 }
 
 // Delete mocks base method

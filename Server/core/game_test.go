@@ -25,8 +25,6 @@ func TestCreateGameOK(t *testing.T) {
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
 	mockGames.EXPECT().Store(mockGame).Return(mockGameID, nil)
-	mockGames.EXPECT().NotifyGameCreated(mockUser1.ID, mockGameID).Return(nil)
-	mockGames.EXPECT().NotifyGameCreated(mockUser2.ID, mockGameID).Return(nil)
 
 	// Create interactor and inject mocks
 	interactor := core.NewGamesInteractor(mockGames, mockUsers)
@@ -59,8 +57,6 @@ func TestCreateGameOKResetBoard(t *testing.T) {
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
 	mockGames.EXPECT().Store(mockGameExpectedToStore).Return(mockGameID, nil)
-	mockGames.EXPECT().NotifyGameCreated(mockUser1.ID, mockGameID).Return(nil)
-	mockGames.EXPECT().NotifyGameCreated(mockUser2.ID, mockGameID).Return(nil)
 
 	// Create interactor and inject mocks
 	interactor := core.NewGamesInteractor(mockGames, mockUsers)

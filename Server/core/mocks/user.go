@@ -49,18 +49,18 @@ func (mr *MockUsersMockRecorder) Store(arg0 interface{}) *gomock.Call {
 }
 
 // FindBySecret mocks base method
-func (m *MockUsers) FindBySecret(Secret string) (core.User, error) {
+func (m *MockUsers) FindBySecret(secret string) (core.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindBySecret", Secret)
+	ret := m.ctrl.Call(m, "FindBySecret", secret)
 	ret0, _ := ret[0].(core.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindBySecret indicates an expected call of FindBySecret
-func (mr *MockUsersMockRecorder) FindBySecret(Secret interface{}) *gomock.Call {
+func (mr *MockUsersMockRecorder) FindBySecret(secret interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBySecret", reflect.TypeOf((*MockUsers)(nil).FindBySecret), Secret)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBySecret", reflect.TypeOf((*MockUsers)(nil).FindBySecret), secret)
 }
 
 // FindByID mocks base method

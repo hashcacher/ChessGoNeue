@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"log"
 	"reflect"
 )
 
@@ -16,26 +17,29 @@ type Game struct {
 // Games is the use case for Game entitiy
 type Games interface {
 	Store(Game) (id int, err error)
+	ListenForStoreByUserID(userID int) (Game, error)
 	FindById(id int) (Game, error)
 	Update(Game) error
-	// Block and listen for a notification saying a game was created for the specified user
-	ListenForGameCreatedNotification(userID int) (gameID int)
-	// Notify the specified user that a game was created for them
-	NotifyGameCreated(userID, gameID int) error
 }
 
 // GamesInteractor is a struct that holds data to be injected for use cases
 type GamesInteractor struct {
-	games Games
-	users Users
+	games         Games
+	users         Users
+	matchRequests MatchRequests
 }
 
 // NewGamesInteractor generates a new GamesInteractor from the given Users store
-func NewGamesInteractor(games Games, users Users) GamesInteractor {
-	return GamesInteractor{
+func NewGamesInteractor(games Games, users Users, matchRequests MatchRequests) GamesInteractor {
+	i := GamesInteractor{
 		games,
 		users,
+		matchRequests,
 	}
+	// Start daemon that listens for match requests and creates games accordingly
+	go i.startGameCreateDaemon()
+	// Return the interractor
+	return i
 }
 
 // Create validates an incoming game's data (users, board) and then stores it
@@ -71,11 +75,39 @@ func (i *GamesInteractor) Create(game Game) (id int, err error) {
 		return 0, err
 	}
 
-	// Notify users
-	i.games.NotifyGameCreated(game.WhiteUser, id)
-	i.games.NotifyGameCreated(game.BlackUser, id)
-
 	return id, nil
+}
+
+func (i GamesInteractor) startGameCreateDaemon() {
+	for {
+		// Wait until a store happens
+		i.matchRequests.ListenForStore()
+		// Get all match requests
+		matchRequests, err := i.matchRequests.FindAll()
+		if err != nil {
+			log.Printf("ERROR: %v\n", err)
+			continue
+		}
+		if len(matchRequests) <= 1 {
+			continue
+		}
+		// Delete the first two requests from the store
+		_, err = i.matchRequests.Delete(matchRequests[0].ID)
+		if err != nil {
+			log.Printf("ERROR: %v\n", err)
+		}
+		_, err = i.matchRequests.Delete(matchRequests[1].ID)
+		if err != nil {
+			log.Printf("ERROR: %v\n", err)
+		}
+		// Use the first two requests to create a game
+		game := Game{
+			WhiteUser: matchRequests[0].UserID,
+			BlackUser: matchRequests[1].UserID,
+		}
+		i.games.Store(game)
+		log.Printf("INFO: Created game: %v\n", game)
+	}
 }
 
 // // ExecuteMove validates a user and then performs a move
