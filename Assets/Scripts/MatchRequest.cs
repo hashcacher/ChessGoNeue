@@ -1,6 +1,6 @@
 namespace ChessGo
 {
     public class MatchRequest {
-        public string clientID;
+        public string secret;
     }
 }

@@ -2,30 +2,58 @@ package inmemory
 
 import (
 	"errors"
+	"log"
 
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 )
 
 type Users struct {
-	clientIdUserMap map[string]core.User
-	idUserMap       map[int]core.User
+	autoIncrement int
+	secretUserMap map[string]core.User
+	idUserMap     map[int]core.User
 }
 
 func NewUsers() Users {
 	return Users{
-		clientIdUserMap: make(map[string]core.User),
-		idUserMap:       make(map[int]core.User),
+		secretUserMap: make(map[string]core.User),
+		idUserMap:     make(map[int]core.User),
 	}
 }
 
-func (r *Users) Store(user core.User) error {
-	r.clientIdUserMap[user.ClientID] = user
-	r.idUserMap[user.ID] = user
-	return nil
+func (r *Users) getNextAutoincrementID() int {
+	r.autoIncrement++
+	return r.autoIncrement
 }
 
-func (r *Users) FindByClientID(id int) (core.User, error) {
+func (r *Users) Store(user core.User) (int, error) {
+	user.ID = r.getNextAutoincrementID()
+	r.secretUserMap[user.Secret] = user
+	r.idUserMap[user.ID] = user
+	return user.ID, nil
+}
+
+func (r *Users) FindByID(id int) (core.User, error) {
 	return r.idUserMap[id], nil
+}
+
+func (r *Users) FindBySecret(secret string) (core.User, error) {
+	if secret == "" {
+		return core.User{}, errors.New("secret cannot be empty string")
+	}
+	user, ok := r.secretUserMap[secret]
+	// Create a new user if one doesn't exist with that secret
+	if !ok {
+		user = core.User{Secret: secret}
+		id, err := r.Store(user)
+		if err != nil {
+			return core.User{}, nil
+		}
+		user.ID = id
+		log.Printf("%v", user)
+		return user, nil
+	}
+	// Return the user
+	return user, nil
 }
 
 func (r *Users) Update(user core.User) error {
@@ -34,6 +62,6 @@ func (r *Users) Update(user core.User) error {
 		return errors.New("user does not exist")
 	}
 	r.idUserMap[user.ID] = user
-	r.clientIdUserMap[user.ClientID] = user
+	r.secretUserMap[user.Secret] = user
 	return nil
 }

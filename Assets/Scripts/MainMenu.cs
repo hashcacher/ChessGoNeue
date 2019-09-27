@@ -67,7 +67,7 @@ namespace ChessGo
 
         IEnumerator MatchMe() {
             var request = new MatchRequest();
-            request.clientID = playerID;
+            request.secret = playerID;
             var msg = JsonUtility.ToJson(request);
             var host = "https://chessgo.xyz";
             if (Application.isEditor) {

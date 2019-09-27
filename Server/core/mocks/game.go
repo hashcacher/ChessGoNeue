@@ -48,6 +48,21 @@ func (mr *MockGamesMockRecorder) Store(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockGames)(nil).Store), arg0)
 }
 
+// ListenForStoreByUserID mocks base method
+func (m *MockGames) ListenForStoreByUserID(userID int) (core.Game, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListenForStoreByUserID", userID)
+	ret0, _ := ret[0].(core.Game)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListenForStoreByUserID indicates an expected call of ListenForStoreByUserID
+func (mr *MockGamesMockRecorder) ListenForStoreByUserID(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenForStoreByUserID", reflect.TypeOf((*MockGames)(nil).ListenForStoreByUserID), userID)
+}
+
 // FindById mocks base method
 func (m *MockGames) FindById(id int) (core.Game, error) {
 	m.ctrl.T.Helper()

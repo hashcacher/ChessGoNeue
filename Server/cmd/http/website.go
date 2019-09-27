@@ -8,12 +8,12 @@ import (
 
 var nextCheck time.Time
 
-func (s *Server) webHandler(w http.ResponseWriter, r *http.Request) {
+func webHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(s.poorMansHTML()))
+	w.Write([]byte(poorMansHTML()))
 }
 
-func (s *Server) poorMansHTML() string {
+func poorMansHTML() string {
 	baseURL := "https://storage.cloud.google.com/chessgo/"
 	linuxURL := "master/linux_chessgo_master"
 	osxURL := "master/osx_chessgo_master.tar.gz"
@@ -25,6 +25,6 @@ func (s *Server) poorMansHTML() string {
 	`, baseURL+osxURL, baseURL+linuxURL)
 }
 
-func (s *Server) dingHandler(w http.ResponseWriter, r *http.Request) {
+func dingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("dong"))
 }
