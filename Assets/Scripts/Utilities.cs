@@ -9,8 +9,8 @@ namespace ChessGo
     //Static methods for computing Go surrounds, valid moves, etc.
     public class Utilities
     {
-        private const int MAXROW = 11;
-        private const int MAXCOL = 11;
+        private const int MAXROW = 7;
+        private const int MAXCOL = 7;
 
         public Utilities()
         {

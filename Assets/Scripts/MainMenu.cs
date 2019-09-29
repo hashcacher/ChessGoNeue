@@ -35,6 +35,7 @@ namespace ChessGo
         public delegate void ConnectDelegate(bool success);
         private int failedConnections = 0;
         private string playerID = "null";
+        private bool matching = false;
 
         void Awake() {
             // Get / generate player ID
@@ -46,6 +47,15 @@ namespace ChessGo
             }
 
             canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
+            menuPanels = new RectTransform[3];
+            int count = 0;
+            for (int i = 0; i < canvas.transform.childCount; i++) {
+                var child = canvas.transform.GetChild(i).GetComponent<RectTransform>();
+                if (child) {
+                    menuPanels[count++] = child; 
+                }
+            }
+
             toggleGroup = GameObject.FindObjectOfType<ToggleGroup>();
             nickname = GameObject.Find("Nickname Input").GetComponent<InputField>();
             playOnline = GameObject.Find("Online").GetComponent<Button>();
@@ -77,6 +87,7 @@ namespace ChessGo
             // Post to our api
             using (UnityWebRequest www = GoodPost(host + "/v1/matchMe", msg))
             {
+                matching = true;
                 yield return www.SendWebRequest();
 
                 if (www.isNetworkError) {
@@ -92,12 +103,14 @@ namespace ChessGo
                         StartCoroutine(MatchMe());
                     }
                 } else if (www.isHttpError) {
+                    OnBackPress();
                     var response = JsonUtility.FromJson<MatchResponse>(www.downloadHandler.text);
                     if (response != null) {
                         Debug.Log("MatchMe error: " + response.err);
                     }
                 } else {
                     // Found! Start game
+                    matching = false;
                     var response = JsonUtility.FromJson<MatchResponse>(www.downloadHandler.text);
                     if (response != null) {
                         if (response.haveMatch) {
@@ -135,6 +148,7 @@ namespace ChessGo
                 dotCount = dotCount % 5 + 1;
             }
         }
+
         UnityWebRequest GoodPost(string url, string body) {
            byte[] bytes = Encoding.ASCII.GetBytes(body);
            var request             = new UnityWebRequest(url);
@@ -143,53 +157,6 @@ namespace ChessGo
            request.method          = UnityWebRequest.kHttpVerbPOST;
            request.timeout = 120;
            return request;
-        }
-
-
-        void ConnectCallback(bool success)
-        {
-            if (!success)
-            {
-                Transform mainPanel = canvas.transform.Find("Main Panel").transform;
-                mainPanel.Find("Error Text").GetComponent<Text>().text = "Can't connect to server";
-                mainPanel.Find("Online").GetComponent<Button>().interactable = false;
-
-            }
-
-        }
-
-        void SetLobbyPlayers(string[] clients)
-        {
-            Text lobbyPlayers = GameObject.Find("Canvas").GetComponentInChildren<Text>();
-            lobbyPlayers.text = string.Join("\n", clients);
-            Debug.Log(clients.Length + " players in lobby");
-        }
-
-        void OnReceiveServerMessage(Message msg) //changed from object[] params
-        {
-            int message = msg.message;
-            string[] parameters = msg.parameters;
-
-            switch (message)
-            {
-                case Messages.FINDMATCH:
-                    {
-                        if(parameters.Length > 0)
-                        {
-                        }
-                        break;
-                    }
-                case Messages.LOADGAME:
-                {
-                    SceneManager.LoadScene("GameBoard");
-                    break;
-                }
-                case Messages.LOBBY_PLAYERS:
-                {
-                    SetLobbyPlayers(parameters);
-                    break;
-                }
-            }
         }
 
         public void OnHotseatPress()
@@ -219,8 +186,15 @@ namespace ChessGo
             SlidePanels(2);
         }
 
-        public void OnBackPress()
-        {
+        void Unmatchme() {
+
+        } 
+
+        public void OnBackPress() {
+            if (matching) {
+                Unmatchme();
+                matching = false;
+            }
             int delta = (int)menuPanels[0].localPosition.x / 800;
             SlidePanels(delta);
         }

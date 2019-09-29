@@ -65,7 +65,7 @@ namespace ChessGo
 
         MeshRenderer pieceHighlight;
 
-        const int nRows = 12; //
+        const int nRows = 8; //
 
         float maxX = 45.381f;
         float maxZ = 45.394f;
@@ -79,7 +79,7 @@ namespace ChessGo
         bool IAmBlack = true;
 
         //Dragging:
-        public const int boardLayerBitmask = (1 << 9); // layer 9
+        public const int boardLayerBitmask = (1 << 8); // layer 8
 
         Transform grabbed;
         Vector3 grabbedPrevPos; //for putting it back if invalid drag
@@ -252,7 +252,7 @@ namespace ChessGo
         //shoots rays all the 2D chess models and 
         void Setup2D()
         {
-            for(int x = 2; x < 10; x++)
+            for(int x = 0; x < 8; x++)
             {
                 for(int y = 0; y < 2; y++)
                 {
@@ -262,23 +262,29 @@ namespace ChessGo
 
                     Vector3 direction = target - camera.transform.position;
                     RaycastHit hit;
-                    if (Physics.Raycast(camera.transform.position, direction, out hit, Mathf.Infinity, (1 << 8)))
+                    if (Physics.Raycast(camera.transform.position, direction, out hit, Mathf.Infinity, (1 << LayerMask.NameToLayer("Board"))))
                     {
                         pieces2D[x, y] = hit.transform.gameObject;
                         hit.transform.gameObject.SetActive(false);
+                        if(hit.transform.name == "Table") {
+                            Debug.Log(x + " " + y);
+                        }
                     }
                     else
                         Debug.LogError("Missed the 2D piece: " + p);
 
                     //White piece
-                    p = new Point(x, 11-y);
+                    p = new Point(x, 7-y);
                     target = GetWorldAtPoint(p, table);
 
                     direction = target - camera.transform.position;
-                    Physics.Raycast(camera.transform.position, direction, out hit, Mathf.Infinity, (1 << 8));
+                    Physics.Raycast(camera.transform.position, direction, out hit, Mathf.Infinity, (1 << LayerMask.NameToLayer("Board")));
 
-                    pieces2D[x, 11-y] = hit.transform.gameObject;
+                    pieces2D[x, 7-y] = hit.transform.gameObject;
                     hit.transform.gameObject.SetActive(false);
+                        if(hit.transform.name == "Table") {
+                            Debug.Log(x + " " + (7-y));
+                        }
                 }
             }
         }
@@ -379,8 +385,8 @@ namespace ChessGo
                         {
                             mouseHighlight = GetPieceAtPoint(p).gameObject;
                             Renderer rend = mouseHighlight.GetComponent<Renderer>();
-                            mouseHighlightColor = rend.material.color;
-                            rend.material.color = Color.red;
+                            mouseHighlightColor = rend.material.GetColor("_EmissionColor");
+                            rend.material.SetColor("_EmissionColor", Color.red);
                         }
                     }
                     else
@@ -415,8 +421,9 @@ namespace ChessGo
                 {
                     mouseHighlight.SetActive(false);
                 }
-                else
-                    mouseHighlight.GetComponent<Renderer>().material.color = mouseHighlightColor;
+                else {
+                    mouseHighlight.GetComponent<Renderer>().material.SetColor("_EmissionColor", mouseHighlightColor);
+                }
                 mouseHighlight = null;
             }
             if (pieceHighlight != null)
@@ -680,13 +687,14 @@ namespace ChessGo
 
                 Point p = ClosestPoint(grabbed.transform.position);
 
+                
                 if (MovePieceBoard(prevPoint, p))
                 {
                     MovePieceTable2D(pieces2D[grabbedInitialPoint.row,grabbedInitialPoint.col].transform, prevPoint, p);
                     MovePieceTable(grabbed, prevPoint, p);
                     CheckSurrounded(p);
 
-                    SendMoveToServer(prevPoint, p);
+                    // TODO SendMoveToServer(prevPoint, p);
 
                     if (usingServer)
                         EndTurn();
@@ -903,7 +911,7 @@ namespace ChessGo
                         {
                             //place either white or black Stone.
                             PlaceStone(p, IAmBlack ? 'S' : 's');
-                            SendGoMoveToServer(p);
+                            // TODO SendGoMoveToServer(p);
 
                             if (usingServer)
                                 EndTurn();
@@ -971,7 +979,7 @@ namespace ChessGo
         {
             Transform chessPiece = GetPieceAtPoint(p1);
             Vector3 targetLocation = GetWorldAtPoint(p2);
-            targetLocation.y = o.transform.position.y;
+            targetLocation.y = chessPiece.GetComponent<Collider>().bounds.extents.y;
 
             pieces[p2.row, p2.col] = pieces[p1.row, p1.col];
             pieces[p1.row, p1.col] = null;
@@ -1091,51 +1099,51 @@ namespace ChessGo
         void SetupPieces(GameObject[,] pieces)
         {
             //pawns
-            CreatePiece(whitePawn, 2, 10);
-            CreatePiece(whitePawn, 3, 10);
-            CreatePiece(whitePawn, 4, 10);
-            CreatePiece(whitePawn, 5, 10);
-            CreatePiece(whitePawn, 6, 10);
-            CreatePiece(whitePawn, 7, 10);
-            CreatePiece(whitePawn, 8, 10);
-            CreatePiece(whitePawn, 9, 10);
+            CreatePiece(whitePawn, 0, 6);
+            CreatePiece(whitePawn, 1, 6);
+            CreatePiece(whitePawn, 2, 6);
+            CreatePiece(whitePawn, 3, 6);
+            CreatePiece(whitePawn, 4, 6);
+            CreatePiece(whitePawn, 5, 6);
+            CreatePiece(whitePawn, 6, 6);
+            CreatePiece(whitePawn, 7, 6);
 
+            CreatePiece(blackPawn, 0, 1);
+            CreatePiece(blackPawn, 1, 1);
             CreatePiece(blackPawn, 2, 1);
             CreatePiece(blackPawn, 3, 1);
             CreatePiece(blackPawn, 4, 1);
             CreatePiece(blackPawn, 5, 1);
             CreatePiece(blackPawn, 6, 1);
             CreatePiece(blackPawn, 7, 1);
-            CreatePiece(blackPawn, 8, 1);
-            CreatePiece(blackPawn, 9, 1);
 
             //rooks
-            CreatePiece(whiteRook, 2, 11);
-            CreatePiece(whiteRook, 9, 11);
+            CreatePiece(whiteRook, 0, 7);
+            CreatePiece(whiteRook, 7, 7);
 
-            CreatePiece(blackRook, 2, 0);
-            CreatePiece(blackRook, 9, 0);
+            CreatePiece(blackRook, 0, 0);
+            CreatePiece(blackRook, 7, 0);
 
             //knights
-            CreatePiece(whiteKnight, 3, 11).transform.Rotate(0, 180, 0);
-            CreatePiece(whiteKnight, 8, 11).transform.Rotate(0, 180, 0);
+            CreatePiece(whiteKnight, 1, 7).transform.Rotate(0, 180, 0);
+            CreatePiece(whiteKnight, 6, 7).transform.Rotate(0, 180, 0);
 
-            CreatePiece(blackKnight, 3, 0);
-            CreatePiece(blackKnight, 8, 0);
+            CreatePiece(blackKnight, 1, 0);
+            CreatePiece(blackKnight, 6, 0);
 
             //bishops
-            CreatePiece(whiteBishop, 4, 11);
-            CreatePiece(whiteBishop, 7, 11);
+            CreatePiece(whiteBishop, 2, 7);
+            CreatePiece(whiteBishop, 5, 7);
 
-            CreatePiece(blackBishop, 4, 0);
-            CreatePiece(blackBishop, 7, 0);
+            CreatePiece(blackBishop, 2, 0);
+            CreatePiece(blackBishop, 5, 0);
 
             //Queen and King
-            CreatePiece(whiteQueen, 5, 11);
-            CreatePiece(whiteKing, 6, 11);
+            CreatePiece(whiteQueen, 3, 7);
+            CreatePiece(whiteKing, 4, 7);
 
-            CreatePiece(blackQueen, 5, 0);
-            CreatePiece(blackKing, 6, 0);
+            CreatePiece(blackQueen, 3, 0);
+            CreatePiece(blackKing, 4, 0);
         }
 
         public void ShowHelp()
