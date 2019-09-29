@@ -614,8 +614,8 @@ namespace ChessGo
             Vector2 textSize = new Vector2(0,text.rectTransform.sizeDelta.y);
             Vector2 futureTextSize = new Vector2(origWidth, text.rectTransform.sizeDelta.y);
 
-            Color a = new Color(0, 1f, 0, 0);
-            Color b = new Color(0, 1f, 0, 1f);
+            Color a = new Color(0, 0f, 0, 0);
+            Color b = new Color(0, 0f, 0, 1f);
             while (t <= seconds)
             {
                 t += Time.deltaTime / seconds;

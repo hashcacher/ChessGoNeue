@@ -1,4 +1,4 @@
-from  gableroux/unity3d:2018.4.9f1-mac
+from gableroux/unity3d:2018.4.9f1-webgl as webgl
 
 RUN apt update && apt install makeself
 
@@ -31,6 +31,25 @@ RUN makeself /app/build/artifacts/linux \
     && rm -rf /app/build/artifacts/linux/* \
     && mv linux_chessgo_master /app/build/artifacts/linux
 
+# Build webGL binary
+RUN xvfb-run --auto-servernum --server-args='-screen 0 640x480x24' \
+  /opt/Unity/Editor/Unity \
+  -batchmode \
+  -quit \
+  -projectPath . \
+  -buildTarget WebGL \
+  -customBuildTarget WebGL \
+  -customBuildName webgl \
+  -customBuildPath build/artifacts/ \
+  -executeMethod BuildCommand.PerformBuild \
+  -logFile /dev/stdout
+
+from gableroux/unity3d:2018.4.9f1-mac
+
+WORKDIR /app
+COPY build/license.ulf /root/.local/share/unity3d/Unity/Unity_lic.ulf
+COPY . .
+COPY --from=webgl /app/build/artifacts/ /app/build/artifacts/
 
 # Build OSX binary
 RUN xvfb-run --auto-servernum --server-args='-screen 0 640x480x24' \
