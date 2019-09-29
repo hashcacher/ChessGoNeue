@@ -25,9 +25,11 @@ func TestCreateGameOK(t *testing.T) {
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
 	mockGames.EXPECT().Store(mockGame).Return(mockGameID, nil)
+	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
+	//mockMatchRequests.EXPECT().ListenForStore()
 
 	// Create interactor and inject mocks
-	interactor := core.NewGamesInteractor(mockGames, mockUsers)
+	interactor := core.NewGamesInteractor(mockGames, mockUsers, mockMatchRequests)
 
 	gotId, err := interactor.Create(mockGame)
 	if err != nil {
@@ -57,9 +59,10 @@ func TestCreateGameOKResetBoard(t *testing.T) {
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
 	mockGames.EXPECT().Store(mockGameExpectedToStore).Return(mockGameID, nil)
+	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 
 	// Create interactor and inject mocks
-	interactor := core.NewGamesInteractor(mockGames, mockUsers)
+	interactor := core.NewGamesInteractor(mockGames, mockUsers, mockMatchRequests)
 
 	gotId, err := interactor.Create(mockGameInCall)
 	if err != nil {
@@ -83,9 +86,10 @@ func TestCreateGameErrorUsersSame(t *testing.T) {
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)
 	mockGames := mocks.NewMockGames(mockCtrl)
+	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 
 	// Create interactor and inject mocks
-	interactor := core.NewGamesInteractor(mockGames, mockUsers)
+	interactor := core.NewGamesInteractor(mockGames, mockUsers, mockMatchRequests)
 
 	_, err := interactor.Create(mockGame)
 	if err != nil {
@@ -112,9 +116,10 @@ func TestCreateGameErrorWhiteNotFound(t *testing.T) {
 	mockUsers.EXPECT().FindByID(1).Return(mockUser1, nil)
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
+	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 
 	// Create interactor and inject mocks
-	interactor := core.NewGamesInteractor(mockGames, mockUsers)
+	interactor := core.NewGamesInteractor(mockGames, mockUsers, mockMatchRequests)
 
 	_, err := interactor.Create(mockGame)
 	if err != nil {
@@ -141,9 +146,10 @@ func TestCreateGameErrorBlackNotFound(t *testing.T) {
 	mockUsers.EXPECT().FindByID(1).Return(mockUser1, nil)
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
+	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 
 	// Create interactor and inject mocks
-	interactor := core.NewGamesInteractor(mockGames, mockUsers)
+	interactor := core.NewGamesInteractor(mockGames, mockUsers, mockMatchRequests)
 
 	_, err := interactor.Create(mockGame)
 	if err != nil {
@@ -171,9 +177,10 @@ func TestCreateGameErrorStoreUnsuccesful(t *testing.T) {
 	mockUsers.EXPECT().FindByID(2).Return(mockUser2, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
 	mockGames.EXPECT().Store(mockGame).Return(0, expectErr)
+	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 
 	// Create interactor and inject mocks
-	interactor := core.NewGamesInteractor(mockGames, mockUsers)
+	interactor := core.NewGamesInteractor(mockGames, mockUsers, mockMatchRequests)
 
 	_, err := interactor.Create(mockGame)
 	if err != nil {

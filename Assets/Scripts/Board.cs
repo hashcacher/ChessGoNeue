@@ -185,7 +185,7 @@ namespace ChessGo
 
                 //rotate the 2d pieces
                 foreach (Transform piece in chess2D.transform)
-                    piece.Rotate(new Vector3(0, 0, 1), speed * Time.deltaTime);
+                    piece.Rotate(new Vector3(0, 0, -1), speed * Time.deltaTime);
 
                 yield return null;
             }
@@ -194,7 +194,7 @@ namespace ChessGo
 
             //rotate the 2d pieces
             foreach (Transform piece in chess2D.transform)
-                piece.Rotate(new Vector3(0, 0, 1), timeLeft);
+                piece.Rotate(new Vector3(0, 0, -1), timeLeft);
         }
 
         public void QuitGame()
@@ -441,7 +441,7 @@ namespace ChessGo
             else
                 return false;
         }
-        
+
         bool CurrentlyDraggingChessPiece()
         {
             return grabbed != null;

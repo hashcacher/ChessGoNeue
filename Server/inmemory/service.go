@@ -117,6 +117,16 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/*
+		closeNotify := w.(http.CloseNotifier).CloseNotify()
+		go func(secret string) {
+			<-closeNotify
+			// Cleanup
+			service.matchRequestsInteractor.Delete(secret)
+			// Need to close the connection and cleanup the rest of the objects
+		}(matchMeReq.secret)
+	*/
+
 	// Wait for match
 	game, err := service.matchRequestsInteractor.MatchMe(user.ID)
 	if err != nil {

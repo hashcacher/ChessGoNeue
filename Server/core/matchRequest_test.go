@@ -28,7 +28,8 @@ func TestMatchMeErrorFindingUser(t *testing.T) {
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
 
-	_, err := interactor.MatchMe(mockSecret)
+	mockID := 123
+	_, err := interactor.MatchMe(mockID)
 	if err != nil {
 		if err.Error() != expectErr.Error() {
 			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
@@ -55,7 +56,8 @@ func TestMatchMeUserDNE(t *testing.T) {
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
 
-	_, err := interactor.MatchMe(mockSecret)
+	mockID := 123
+	_, err := interactor.MatchMe(mockID)
 	if err != nil {
 		if err.Error() != expectErr.Error() {
 			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
@@ -85,7 +87,7 @@ func TestFindByUserIDError(t *testing.T) {
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
 
-	_, err := interactor.MatchMe(mockSecret)
+	_, err := interactor.MatchMe(mockUser.ID)
 	if err != nil {
 		if err.Error() != expectErr.Error() {
 			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
@@ -115,7 +117,7 @@ func TestFindByUserIDExists(t *testing.T) {
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
 
-	_, err := interactor.MatchMe(mockSecret)
+	_, err := interactor.MatchMe(mockUser.ID)
 	if err != nil {
 		if err.Error() != expectErr.Error() {
 			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
@@ -151,11 +153,11 @@ func TestMatchMeSuccess(t *testing.T) {
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
 
-	gotGameId, err := interactor.MatchMe(mockSecret)
+	gotGame, err := interactor.MatchMe(mockUser.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotGameId != mockGame.ID {
-		t.Fatalf("got: %v, expected: %v", gotGameId, mockGame.ID)
+	if gotGame.ID != mockGame.ID {
+		t.Fatalf("got: %v, expected: %v", gotGame.ID, mockGame.ID)
 	}
 }
