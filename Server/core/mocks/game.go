@@ -33,6 +33,20 @@ func (m *MockGames) EXPECT() *MockGamesMockRecorder {
 	return m.recorder
 }
 
+// GetBoard mocks base method
+func (m *MockGames) GetBoard(arg0 core.Game) [8][8]byte {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBoard", arg0)
+	ret0, _ := ret[0].([8][8]byte)
+	return ret0
+}
+
+// GetBoard indicates an expected call of GetBoard
+func (mr *MockGamesMockRecorder) GetBoard(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoard", reflect.TypeOf((*MockGames)(nil).GetBoard), arg0)
+}
+
 // Store mocks base method
 func (m *MockGames) Store(arg0 core.Game) (int, error) {
 	m.ctrl.T.Helper()
@@ -76,6 +90,21 @@ func (m *MockGames) FindById(id int) (core.Game, error) {
 func (mr *MockGamesMockRecorder) FindById(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindById", reflect.TypeOf((*MockGames)(nil).FindById), id)
+}
+
+// FindByUserId mocks base method
+func (m *MockGames) FindByUserId(id int) ([]core.Game, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByUserId", id)
+	ret0, _ := ret[0].([]core.Game)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByUserId indicates an expected call of FindByUserId
+func (mr *MockGamesMockRecorder) FindByUserId(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByUserId", reflect.TypeOf((*MockGames)(nil).FindByUserId), id)
 }
 
 // Update mocks base method

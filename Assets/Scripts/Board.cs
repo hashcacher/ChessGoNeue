@@ -687,7 +687,6 @@ namespace ChessGo
 
                 Point p = ClosestPoint(grabbed.transform.position);
 
-                
                 if (MovePieceBoard(prevPoint, p))
                 {
                     MovePieceTable2D(pieces2D[grabbedInitialPoint.row,grabbedInitialPoint.col].transform, prevPoint, p);
