@@ -11,18 +11,19 @@ RUN go mod download
 
 COPY . .
 
-RUN go test ./... && go build .
+RUN go build cmd/http/main.go
 
 # Create the minimal runtime image
 FROM alpine:3.10
 
+WORKDIR /app
+
 # Bring the binary over
-COPY --from=builder /build /app
+COPY --from=builder /build/main /app
 
 # Set up the app to run as a non-root user
 RUN chown -R 65534 /app
 USER 65534
 
-WORKDIR /app
 EXPOSE 8080
-CMD "./Server"
+CMD "./main"
