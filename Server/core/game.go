@@ -36,8 +36,6 @@ func NewGamesInteractor(games Games, users Users, matchRequests MatchRequests) G
 		users,
 		matchRequests,
 	}
-	// Start daemon that listens for match requests and creates games accordingly
-	go i.startGameCreateDaemon()
 	// Return the interractor
 	return i
 }
@@ -78,7 +76,7 @@ func (i *GamesInteractor) Create(game Game) (id int, err error) {
 	return id, nil
 }
 
-func (i GamesInteractor) startGameCreateDaemon() {
+func (i GamesInteractor) StartGameCreateDaemon() {
 	for {
 		// Wait until a store happens
 		i.matchRequests.ListenForStore()

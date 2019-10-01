@@ -9,7 +9,7 @@ import (
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core/mocks"
 )
 
-// CreateGame successful basic case
+// TestCreateGameOK successful basic case
 func TestCreateGameOK(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -26,7 +26,6 @@ func TestCreateGameOK(t *testing.T) {
 	mockGames := mocks.NewMockGames(mockCtrl)
 	mockGames.EXPECT().Store(mockGame).Return(mockGameID, nil)
 	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
-	//mockMatchRequests.EXPECT().ListenForStore()
 
 	// Create interactor and inject mocks
 	interactor := core.NewGamesInteractor(mockGames, mockUsers, mockMatchRequests)
@@ -40,7 +39,7 @@ func TestCreateGameOK(t *testing.T) {
 	}
 }
 
-// CreateGame successful but clears board
+// TestCreateGameOKResetBoard successful but clears board
 func TestCreateGameOKResetBoard(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

@@ -30,6 +30,7 @@ func NewWebService() WebService {
 	users := NewUsers()
 	matchRequests := NewMatchRequests(matchRequestsMap)
 	gamesInterractor := core.NewGamesInteractor(&games, &users, &matchRequests)
+	go gamesInterractor.StartGameCreateDaemon()
 	usersInteractor := core.NewUsersInteractor(&users)
 	matchRequestsInteractor := core.NewMatchRequestsInteractor(&matchRequests, &users, &games)
 
