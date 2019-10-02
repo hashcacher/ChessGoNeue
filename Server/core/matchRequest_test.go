@@ -11,60 +11,6 @@ import (
 
 // TODO: Error on store
 
-// TestMatchMeErrorFindingUser error if error finding user
-func TestMatchMeErrorFindingUser(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	expectErr := errors.New("db error")
-	mockSecret := "mock-Secret-1"
-
-	// Create mocks
-	mockUsers := mocks.NewMockUsers(mockCtrl)
-	mockUsers.EXPECT().FindBySecret(mockSecret).Return(core.User{}, expectErr)
-	mockGames := mocks.NewMockGames(mockCtrl)
-	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
-
-	// Create interactor and inject mocks
-	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
-
-	_, err := interactor.MatchMe(mockSecret)
-	if err != nil {
-		if err.Error() != expectErr.Error() {
-			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
-		}
-	} else {
-		t.Fatalf("Expected error, but call was succesful")
-	}
-}
-
-// TestMatchMeUserDNE error if user by Secret comes back empty (doesn't exist)
-func TestMatchMeUserDNE(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	expectErr := errors.New("could not find user with that client id")
-	mockSecret := "mock-Secret-1"
-
-	// Create mocks
-	mockUsers := mocks.NewMockUsers(mockCtrl)
-	mockUsers.EXPECT().FindBySecret(mockSecret).Return(core.User{}, nil)
-	mockGames := mocks.NewMockGames(mockCtrl)
-	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
-
-	// Create interactor and inject mocks
-	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
-
-	_, err := interactor.MatchMe(mockSecret)
-	if err != nil {
-		if err.Error() != expectErr.Error() {
-			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
-		}
-	} else {
-		t.Fatalf("Expected error, but call was succesful")
-	}
-}
-
 // TestFindByUserIDError error if we encounter an error trying to check if a MatchRequest
 // already exists for a user
 func TestFindByUserIDError(t *testing.T) {
@@ -77,7 +23,6 @@ func TestFindByUserIDError(t *testing.T) {
 
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)
-	mockUsers.EXPECT().FindBySecret(mockSecret).Return(mockUser, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
 	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 	mockMatchRequests.EXPECT().FindByUserID(mockUser.ID).Return(core.MatchRequest{}, expectErr)
@@ -85,7 +30,7 @@ func TestFindByUserIDError(t *testing.T) {
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
 
-	_, err := interactor.MatchMe(mockSecret)
+	_, err := interactor.MatchMe(mockUser.ID)
 	if err != nil {
 		if err.Error() != expectErr.Error() {
 			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
@@ -107,7 +52,6 @@ func TestFindByUserIDExists(t *testing.T) {
 
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)
-	mockUsers.EXPECT().FindBySecret(mockSecret).Return(mockUser, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
 	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 	mockMatchRequests.EXPECT().FindByUserID(mockUser.ID).Return(mockMatchRequest, nil)
@@ -115,7 +59,7 @@ func TestFindByUserIDExists(t *testing.T) {
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
 
-	_, err := interactor.MatchMe(mockSecret)
+	_, err := interactor.MatchMe(mockUser.ID)
 	if err != nil {
 		if err.Error() != expectErr.Error() {
 			t.Fatalf("got error: %v, expected error: %v", err, expectErr)
@@ -141,9 +85,8 @@ func TestMatchMeSuccess(t *testing.T) {
 
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)
-	mockUsers.EXPECT().FindBySecret(mockSecret).Return(mockUser, nil)
 	mockGames := mocks.NewMockGames(mockCtrl)
-	mockGames.EXPECT().ListenForStoreByUserID(mockUser.ID).Return(mockGame.ID)
+	mockGames.EXPECT().ListenForStoreByUserID(mockUser.ID).Return(mockGame, nil)
 	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 	mockMatchRequests.EXPECT().Store(expectStoreMatchRequest)
 	mockMatchRequests.EXPECT().FindByUserID(mockUser.ID).Return(core.MatchRequest{}, nil)
@@ -151,11 +94,11 @@ func TestMatchMeSuccess(t *testing.T) {
 	// Create interactor and inject mocks
 	interactor := core.NewMatchRequestsInteractor(mockMatchRequests, mockUsers, mockGames)
 
-	gotGameId, err := interactor.MatchMe(mockSecret)
+	gotGame, err := interactor.MatchMe(mockUser.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotGameId != mockGame.ID {
-		t.Fatalf("got: %v, expected: %v", gotGameId, mockGame.ID)
+	if gotGame.ID != mockGame.ID {
+		t.Fatalf("got: %v, expected: %v", gotGame.ID, mockGame.ID)
 	}
 }

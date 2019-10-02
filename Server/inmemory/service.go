@@ -30,6 +30,7 @@ func NewWebService() WebService {
 	users := NewUsers()
 	matchRequests := NewMatchRequests(matchRequestsMap)
 	gamesInterractor := core.NewGamesInteractor(&games, &users, &matchRequests)
+	go gamesInterractor.StartGameCreateDaemon()
 	usersInteractor := core.NewUsersInteractor(&users)
 	matchRequestsInteractor := core.NewMatchRequestsInteractor(&matchRequests, &users, &games)
 
@@ -77,11 +78,24 @@ type MatchMeRequest struct {
 	Secret string `json:"secret"`
 }
 
+// MatchMeRequest is the format of the request sent to this endpoint
+type GetBoardRequest struct {
+	Secret string `json:"secret"`
+	GameID int    `json:"gameID"`
+}
+
 // MatchMeResponse is the format of the response sent from this endpoint
 type MatchMeResponse struct {
 	Err      string `json:"err"`
 	GameID   int    `json:"gameId"`
 	AreWhite bool   `json:"areWhite"`
+}
+
+// MoveRequest is the format of the response sent from this endpoint
+type MoveRequest struct {
+	Secret string `json:"secret"`
+	GameID int    `json:"gameID"`
+	Move   string `json:"move"`
 }
 
 func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
@@ -117,6 +131,16 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/*
+		closeNotify := w.(http.CloseNotifier).CloseNotify()
+		go func(secret string) {
+			<-closeNotify
+			// Cleanup
+			service.matchRequestsInteractor.Delete(secret)
+			// Need to close the connection and cleanup the rest of the objects
+		}(matchMeReq.secret)
+	*/
+
 	// Wait for match
 	game, err := service.matchRequestsInteractor.MatchMe(user.ID)
 	if err != nil {
@@ -143,8 +167,36 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// func (service *Webservice) MatchMe(w http.ResponseWriter, r *http.Request) {
-// 	Secret, _ := strconv.Atoi(r.FormValue("Secret"))
-// 	// Get and wait for a match
-// 	// Return the game
-// }
+func (service *WebService) GetBoard(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var request GetBoardRequest
+	err := decoder.Decode(&request)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte("invalid arguments"))
+		return
+	}
+
+	board, err := service.gamesInteractor.GetBoard(request.Secret, request.GameID)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte("error getting board " + err.Error()))
+	}
+
+	for _, row := range board {
+		w.Write(append(row[:], '\n'))
+	}
+}
+
+func (service *WebService) MakeMove(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var request MoveRequest
+	err := decoder.Decode(&request)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte("invalid arguments"))
+		return
+	}
+
+	service.gamesInteractor.MakeMove(request.Secret, request.GameID, request.Move)
+}

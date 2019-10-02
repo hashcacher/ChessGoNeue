@@ -16,9 +16,12 @@ type Game struct {
 
 // Games is the use case for Game entitiy
 type Games interface {
+	MakeMove(*Game, User, string) error
+	GetBoard(*Game) (board [8][8]byte)
 	Store(Game) (id int, err error)
-	ListenForStoreByUserID(userID int) (Game, error)
+	ListenForStoreByUserID(userID int) (*Game, error)
 	FindById(id int) (Game, error)
+	FindByUserId(id int) ([]*Game, error)
 	Update(Game) error
 }
 
@@ -36,8 +39,6 @@ func NewGamesInteractor(games Games, users Users, matchRequests MatchRequests) G
 		users,
 		matchRequests,
 	}
-	// Start daemon that listens for match requests and creates games accordingly
-	go i.startGameCreateDaemon()
 	// Return the interractor
 	return i
 }
@@ -78,7 +79,30 @@ func (i *GamesInteractor) Create(game Game) (id int, err error) {
 	return id, nil
 }
 
-func (i GamesInteractor) startGameCreateDaemon() {
+func (i GamesInteractor) GetBoard(secret string, gameID int) ([8][8]byte, error) {
+	user, err := i.users.FindBySecret(secret)
+	if err != nil {
+		return [8][8]byte{}, errors.New("couldnt find user by that id")
+	}
+
+	games := i.getGamesForUser(user.ID)
+	if len(games) == 0 {
+		return [8][8]byte{}, errors.New("couldnt find game")
+	}
+
+	return games[0].Board, nil // TODO take gameID into account
+}
+
+func (i GamesInteractor) getGamesForUser(userID int) []*Game {
+	games, err := i.games.FindByUserId(userID)
+	if err != nil {
+		return []*Game{}
+	}
+
+	return games
+}
+
+func (i GamesInteractor) StartGameCreateDaemon() {
 	for {
 		// Wait until a store happens
 		i.matchRequests.ListenForStore()
@@ -104,15 +128,41 @@ func (i GamesInteractor) startGameCreateDaemon() {
 		game := Game{
 			WhiteUser: matchRequests[0].UserID,
 			BlackUser: matchRequests[1].UserID,
+			Board:     defaultBoard(),
 		}
 		i.games.Store(game)
 		log.Printf("INFO: Created game: %v\n", game)
 	}
 }
 
-// // ExecuteMove validates a user and then performs a move
-// func (i *GamesInteractor) ExecuteMove(m string, userID, gameId int) {
-// 	// (UserRepository) Validate user is in match and it is their turn
-// 	// (GameRepository) Perform update
-// 	// (-)              Notify other user about the update
-// }
+func defaultBoard() [8][8]byte {
+	board := [8][8]byte{}
+	board[0] = [8]byte{'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'}
+	board[1] = [8]byte{'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'}
+
+	for i := 2; i < 6; i++ {
+		board[i] = [8]byte{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
+	}
+
+	board[6] = [8]byte{'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'}
+	board[7] = [8]byte{'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
+
+	return board
+}
+
+// MakeMove validates a user and then performs a move
+func (i *GamesInteractor) MakeMove(secret string, gameId int, move string) error {
+	user, err := i.users.FindBySecret(secret)
+	if err != nil {
+		return errors.New("couldnt find user by that id")
+	}
+
+	games := i.getGamesForUser(user.ID)
+	if len(games) == 0 {
+		return errors.New("couldnt find game")
+	}
+
+	i.games.MakeMove(games[0], user, move) // TODO take gameID into account
+
+	return nil
+}

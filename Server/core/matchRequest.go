@@ -43,16 +43,16 @@ func NewMatchRequestsInteractor(matchRequests MatchRequests, users Users, games 
 
 // MatchMe will take in a user, create a match request, and wait for a notification
 // saying a match was succesful
-func (i *MatchRequestsInteractor) MatchMe(userID int) (game Game, err error) {
+func (i *MatchRequestsInteractor) MatchMe(userID int) (game *Game, err error) {
 	// Make sure the user isn't already queued for a game by seeing if they have a match
 	// request created
 	matchRequest, err := i.matchRequests.FindByUserID(userID)
 	isMatchRequestEmpty := reflect.DeepEqual(matchRequest, MatchRequest{})
 	if err != nil {
-		return Game{}, err
+		return &Game{}, err
 	}
 	if !isMatchRequestEmpty {
-		return Game{}, errors.New("you can only queue for one game at a time")
+		return &Game{}, errors.New("you can only queue for one game at a time")
 	}
 
 	// Create request
