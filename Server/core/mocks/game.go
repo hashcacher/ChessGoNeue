@@ -34,7 +34,7 @@ func (m *MockGames) EXPECT() *MockGamesMockRecorder {
 }
 
 // MakeMove mocks base method
-func (m *MockGames) MakeMove(arg0 *core.Game, arg1 core.User, arg2 string) error {
+func (m *MockGames) MakeMove(arg0 *core.Game, arg1 *core.User, arg2 string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MakeMove", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -45,6 +45,21 @@ func (m *MockGames) MakeMove(arg0 *core.Game, arg1 core.User, arg2 string) error
 func (mr *MockGamesMockRecorder) MakeMove(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MakeMove", reflect.TypeOf((*MockGames)(nil).MakeMove), arg0, arg1, arg2)
+}
+
+// GetMove mocks base method
+func (m *MockGames) GetMove(arg0 *core.Game, arg1 *core.User) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMove", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMove indicates an expected call of GetMove
+func (mr *MockGamesMockRecorder) GetMove(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMove", reflect.TypeOf((*MockGames)(nil).GetMove), arg0, arg1)
 }
 
 // GetBoard mocks base method
@@ -89,6 +104,21 @@ func (m *MockGames) ListenForStoreByUserID(userID int) (*core.Game, error) {
 func (mr *MockGamesMockRecorder) ListenForStoreByUserID(userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenForStoreByUserID", reflect.TypeOf((*MockGames)(nil).ListenForStoreByUserID), userID)
+}
+
+// ListenForMoveByUserID mocks base method
+func (m *MockGames) ListenForMoveByUserID(userID int) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListenForMoveByUserID", userID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListenForMoveByUserID indicates an expected call of ListenForMoveByUserID
+func (mr *MockGamesMockRecorder) ListenForMoveByUserID(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenForMoveByUserID", reflect.TypeOf((*MockGames)(nil).ListenForMoveByUserID), userID)
 }
 
 // FindById mocks base method

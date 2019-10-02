@@ -12,14 +12,17 @@ type Game struct {
 	BlackUser int        `json:"blackUser"`
 	WhiteUser int        `json:"WhiteUser"`
 	Board     [8][8]byte `json:"board"`
+	WhiteTurn bool       `json:"whiteTurn"`
 }
 
 // Games is the use case for Game entitiy
 type Games interface {
-	MakeMove(*Game, User, string) error
+	MakeMove(*Game, *User, string) error
+	GetMove(*Game, *User) (string, error)
 	GetBoard(*Game) (board [8][8]byte)
 	Store(Game) (id int, err error)
 	ListenForStoreByUserID(userID int) (*Game, error)
+	ListenForMoveByUserID(userID int) (string, error)
 	FindById(id int) (Game, error)
 	FindByUserId(id int) ([]*Game, error)
 	Update(Game) error
@@ -162,7 +165,27 @@ func (i *GamesInteractor) MakeMove(secret string, gameId int, move string) error
 		return errors.New("couldnt find game")
 	}
 
-	i.games.MakeMove(games[0], user, move) // TODO take gameID into account
+	game := games[0] // TODO take gameID into account
+	if game.WhiteTurn && game.WhiteUser != user.ID ||
+		!game.WhiteTurn && game.BlackUser != user.ID {
+		return errors.New("not your turn")
+	}
 
-	return nil
+	return i.games.MakeMove(games[0], &user, move)
+}
+
+func (i *GamesInteractor) GetMove(secret string, gameId int) (string, error) {
+	user, err := i.users.FindBySecret(secret)
+	if err != nil {
+		return "", errors.New("couldnt find user by that id")
+	}
+
+	games := i.getGamesForUser(user.ID)
+	if len(games) == 0 {
+		return "", errors.New("couldnt find game")
+	}
+
+	game := games[0] // TODO take gameID into account
+
+	return i.games.GetMove(game, &user)
 }

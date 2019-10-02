@@ -86,7 +86,7 @@ func TestMatchMeSuccess(t *testing.T) {
 	// Create mocks
 	mockUsers := mocks.NewMockUsers(mockCtrl)
 	mockGames := mocks.NewMockGames(mockCtrl)
-	mockGames.EXPECT().ListenForStoreByUserID(mockUser.ID).Return(mockGame, nil)
+	mockGames.EXPECT().ListenForStoreByUserID(mockUser.ID).Return(&mockGame, nil)
 	mockMatchRequests := mocks.NewMockMatchRequests(mockCtrl)
 	mockMatchRequests.EXPECT().Store(expectStoreMatchRequest)
 	mockMatchRequests.EXPECT().FindByUserID(mockUser.ID).Return(core.MatchRequest{}, nil)

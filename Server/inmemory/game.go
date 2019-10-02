@@ -12,12 +12,16 @@ type Games struct {
 	games         map[int]core.Game
 	// Map from userID to notification channel
 	storedEventsByUserID map[int]chan *core.Game
+
+	// Map from userID to move channel
+	moveEventsByUserID map[int]chan string
 }
 
 func NewGames(games map[int]core.Game) Games {
 	return Games{
 		games:                games,
 		storedEventsByUserID: make(map[int]chan *core.Game),
+		moveEventsByUserID:   make(map[int]chan string),
 	}
 }
 
@@ -45,6 +49,16 @@ func (g *Games) Store(game core.Game) (int, error) {
 	notifyChannel <- &game
 	// Return
 	return game.ID, nil
+}
+
+func (g *Games) ListenForMoveByUserID(userID int) (move string, err error) {
+	notifyChannel, ok := g.moveEventsByUserID[userID]
+	// If the channel doesn't exist, create it
+	if !ok {
+		notifyChannel = make(chan string, 2)
+		g.moveEventsByUserID[userID] = notifyChannel
+	}
+	return <-notifyChannel, nil
 }
 
 func (g *Games) ListenForStoreByUserID(userID int) (game *core.Game, err error) {
@@ -77,7 +91,12 @@ func (g *Games) Update(game core.Game) error {
 	return nil
 }
 
-func (g *Games) MakeMove(game *core.Game, user core.User, move string) error {
+func (g *Games) GetMove(game *core.Game, user *core.User) (string, error) {
+	return g.ListenForMoveByUserID(user.ID)
+}
+
+// MakeMove assumes a previous function checked it's this user's turn
+func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 	squares := strings.Split(move, ">")
 
 	if len(squares) == 2 {
@@ -111,7 +130,22 @@ func (g *Games) MakeMove(game *core.Game, user core.User, move string) error {
 		return errors.New("Invalid Move Format")
 	}
 
+	// Next player's turn
+	game.WhiteTurn = !game.WhiteTurn
+
+	// Actually override the game in the map
 	g.games[game.ID] = *game
+
+	// Get out opponent's player ID
+	var oppID int
+	if user.ID == game.BlackUser {
+		oppID = game.WhiteUser
+	} else {
+		oppID = game.BlackUser
+	}
+
+	// Send move to other player
+	g.moveEventsByUserID[oppID] <- move
 
 	return nil
 }

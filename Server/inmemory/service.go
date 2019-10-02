@@ -2,8 +2,8 @@ package inmemory
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
@@ -41,38 +41,6 @@ func NewWebService() WebService {
 	}
 }
 
-// GetUser retrieves a user
-func (service *WebService) GetUser(w http.ResponseWriter, r *http.Request) {
-	Secret := r.FormValue("secret")
-	user, _ := service.usersInteractor.FindBySecret(Secret)
-	// Check for empty
-	if user.Secret == "" {
-		http.Error(w, "user not found", http.StatusNotFound)
-		return
-	}
-	fmt.Fprintf(w, "%v", user)
-}
-
-// CreateUser creates a user
-func (service *WebService) CreateUser(w http.ResponseWriter, r *http.Request) {
-	reqBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		fmt.Fprintf(w, "user data missing from body")
-	}
-	// Parse user from json
-	var user core.User
-	json.Unmarshal(reqBody, &user)
-
-	Secret := r.FormValue("Secret")
-	user, _ = service.usersInteractor.FindBySecret(Secret)
-	// Check for empty
-	if user.Secret == "" {
-		http.Error(w, "user not found", http.StatusNotFound)
-		return
-	}
-	fmt.Fprintf(w, "%v", user)
-}
-
 // MatchMeRequest is the format of the request sent to this endpoint
 type MatchMeRequest struct {
 	Secret string `json:"secret"`
@@ -91,11 +59,25 @@ type MatchMeResponse struct {
 	AreWhite bool   `json:"areWhite"`
 }
 
-// MoveRequest is the format of the response sent from this endpoint
+// MoveRequest is the format of the request sent for GetMove/MakeMove
 type MoveRequest struct {
 	Secret string `json:"secret"`
 	GameID int    `json:"gameID"`
 	Move   string `json:"move"`
+}
+
+// MoveResponse is the format of the response sent from this endpoint
+type MakeMoveResponse struct {
+	Success bool `json:"success"`
+}
+
+// MoveResponse is the format of the response sent from this endpoint
+type GetMoveResponse struct {
+	Move string `json:"move"`
+}
+
+func errorResponse(err error) []byte {
+	return []byte(fmt.Sprintf(`{ "err": "%s" }`, err.Error()))
 }
 
 func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
@@ -103,31 +85,23 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 	var request MatchMeRequest
 	err := decoder.Decode(&request)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(400)
+		w.Write(errorResponse(err))
+		return
 	}
 
 	// Authenticate user
 	user, err := service.usersInteractor.FindBySecret(request.Secret)
-	// If server error, respond with 500
 	if err != nil {
-		// Respond
-		resp := MatchMeResponse{
-			Err: err.Error(),
-		}
-		json, _ := json.Marshal(resp)
 		w.WriteHeader(500)
-		w.Write(json)
+		w.Write(errorResponse(err))
 		return
 	}
+
 	// If user is empty, respond 404
 	if reflect.DeepEqual(user, core.User{}) {
-		// Respond
-		resp := MatchMeResponse{
-			Err: "user not found",
-		}
-		json, _ := json.Marshal(resp)
+		w.Write(errorResponse(errors.New("user not found")))
 		w.WriteHeader(404)
-		w.Write(json)
 		return
 	}
 
@@ -144,14 +118,9 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 	// Wait for match
 	game, err := service.matchRequestsInteractor.MatchMe(user.ID)
 	if err != nil {
-		log.Printf("ERROR: %v", err)
-		// Respond
-		resp := MatchMeResponse{
-			Err: err.Error(),
-		}
-		json, _ := json.Marshal(resp)
+		log.Printf("MATCHME ERROR: %v", err)
 		w.WriteHeader(500)
-		w.Write(json)
+		w.Write(errorResponse(err))
 		return
 	}
 
@@ -173,14 +142,15 @@ func (service *WebService) GetBoard(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&request)
 	if err != nil {
 		w.WriteHeader(400)
-		w.Write([]byte("invalid arguments"))
+		w.Write(errorResponse(errors.New("invalid arguments")))
 		return
 	}
 
 	board, err := service.gamesInteractor.GetBoard(request.Secret, request.GameID)
 	if err != nil {
 		w.WriteHeader(500)
-		w.Write([]byte("error getting board " + err.Error()))
+		w.Write(errorResponse(errors.New("error getting board " + err.Error())))
+		return
 	}
 
 	for _, row := range board {
@@ -194,9 +164,42 @@ func (service *WebService) MakeMove(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&request)
 	if err != nil {
 		w.WriteHeader(400)
+		w.Write(errorResponse(errors.New("invalid arguments")))
+		return
+	}
+
+	err = service.gamesInteractor.MakeMove(request.Secret, request.GameID, request.Move)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write(errorResponse(err))
+		return
+	}
+
+	resp := MakeMoveResponse{
+		Success: true,
+	}
+	json, _ := json.Marshal(resp)
+	w.Write([]byte(json))
+}
+
+func (service *WebService) GetMove(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var request MoveRequest
+	err := decoder.Decode(&request)
+	if err != nil {
+		w.WriteHeader(400)
 		w.Write([]byte("invalid arguments"))
 		return
 	}
 
-	service.gamesInteractor.MakeMove(request.Secret, request.GameID, request.Move)
+	move, err := service.gamesInteractor.GetMove(request.Secret, request.GameID)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write(errorResponse(err))
+		return
+	}
+
+	resp := GetMoveResponse{move}
+	json, _ := json.Marshal(resp)
+	w.Write([]byte(json))
 }
