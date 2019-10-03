@@ -31,7 +31,7 @@ func webHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func poorMansHTML() string {
-	webglURL := "https://storage.cloud.google.com/chessgo/master/webgl"
+	webglURL := "https://storage.googleapis.com/chessgo/master/webgl"
 
 	return fmt.Sprintf(
 		`<html lang="en-us">
