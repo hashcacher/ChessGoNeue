@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using UnityEngine.Networking;
 using UnityEngine.EventSystems;
 using System.Collections;
-using System.Text;
 using System.Linq;
 using UnityEngine.SceneManagement;
 
@@ -34,16 +33,15 @@ namespace ChessGo
 
         public delegate void ConnectDelegate(bool success);
         private int failedConnections = 0;
-        private string playerID = "null";
         private bool matching = false;
 
         void Awake() {
             // Get / generate player ID
             if (PlayerPrefs.HasKey("ID")) {
-                this.playerID = PlayerPrefs.GetString("ID");
+                UnitySingleton.secret = PlayerPrefs.GetString("ID");
             } else {
-                this.playerID = RandomString(20);
-                PlayerPrefs.SetString("ID", this.playerID);
+                UnitySingleton.secret = RandomString(20);
+                PlayerPrefs.SetString("ID", UnitySingleton.secret);
             }
 
             canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
@@ -77,15 +75,12 @@ namespace ChessGo
 
         IEnumerator MatchMe() {
             var request = new MatchRequest();
-            request.secret = playerID;
+            request.secret = UnitySingleton.secret;
             var msg = JsonUtility.ToJson(request);
-            var host = "https://chessgo.xyz";
-            if (Application.isEditor) {
-                host = "localhost:8080";
-            }
+            var host = Utilities.GetServerHost();
 
             // Post to our api
-            using (UnityWebRequest www = GoodPost(host + "/v1/matchMe", msg))
+            using (UnityWebRequest www = Utilities.GoodPost(host + "/v1/matchMe", msg))
             {
                 matching = true;
                 yield return www.SendWebRequest();
@@ -104,21 +99,15 @@ namespace ChessGo
                     }
                 } else if (www.isHttpError) {
                     OnBackPress();
-                    var response = JsonUtility.FromJson<MatchResponse>(www.downloadHandler.text);
-                    if (response != null) {
-                        Debug.Log("MatchMe error: " + response.err);
-                    }
+                    Debug.Log("MatchMe error: " + www.downloadHandler.text);
                 } else {
                     // Found! Start game
                     matching = false;
                     var response = JsonUtility.FromJson<MatchResponse>(www.downloadHandler.text);
                     if (response != null) {
-                        if (response.haveMatch) {
-                            Debug.Log("Found match!");
-                            StartCoroutine(Countdown());
-                        } else {
-                            Debug.Log("MatchMe 200 doesnt have match wtf error: " + response.err);
-                        }
+                        UnitySingleton.amIWhite = response.areWhite;
+                        UnitySingleton.gameID = response.gameID;
+                        StartCoroutine(Countdown());
                     } else {
                         Debug.Log("Couldnt parse server response: " + www.downloadHandler.text);
                     }
@@ -136,7 +125,7 @@ namespace ChessGo
                 yield return new WaitForSecondsRealtime(1);
             }
 
-            PlayerPrefs.SetInt("Hotseat", 0);
+            UnitySingleton.hotseat = false;
             SceneManager.LoadScene("GameBoard");
         }
 
@@ -149,19 +138,9 @@ namespace ChessGo
             }
         }
 
-        UnityWebRequest GoodPost(string url, string body) {
-           byte[] bytes = Encoding.ASCII.GetBytes(body);
-           var request             = new UnityWebRequest(url);
-           request.uploadHandler   = new UploadHandlerRaw(bytes);
-           request.downloadHandler = new DownloadHandlerBuffer();
-           request.method          = UnityWebRequest.kHttpVerbPOST;
-           request.timeout = 120;
-           return request;
-        }
-
         public void OnHotseatPress()
         {
-            PlayerPrefs.SetInt("Hotseat", 1);
+            UnitySingleton.hotseat = true;
             SceneManager.LoadScene("GameBoard");
         }
 

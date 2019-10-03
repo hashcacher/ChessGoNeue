@@ -3678,6 +3678,7 @@ GameObject:
   - component: {fileID: 972082165}
   - component: {fileID: 972082164}
   - component: {fileID: 972082169}
+  - component: {fileID: 972082170}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -3798,7 +3799,6 @@ MonoBehaviour:
   whiteQueen: {fileID: 129076, guid: fdbfb4cf2b212cc46ae442b2a1502545, type: 3}
   blackKing: {fileID: 104636, guid: 1ec96b96ee8b01c4b93a2ea7a7b86afc, type: 3}
   whiteKing: {fileID: 184202, guid: 3ac7497d88bd1f044b5c857b3bb1340a, type: 3}
-  chatBubble: {fileID: 11468526, guid: 9e04db6da98b4fc4db1b62a34c457ff4, type: 3}
   chess2D: {fileID: 1952784142}
   validMove: {fileID: 195916, guid: 51a5bf0c1ef05dc4f865cd6e5a424472, type: 3}
   redSquareHighlight: {fileID: 167320, guid: ea9bd22866e971b4ba7b069a9f1a4c4e, type: 3}
@@ -3807,12 +3807,51 @@ MonoBehaviour:
   topDownSpot: {fileID: 1009877205}
   TopDownToggleButton: {fileID: 1293488380}
   myTurnText: {fileID: 717935212}
-  inputChat: {fileID: 493949004}
-  chatBox: {fileID: 41364415}
   playerNamesText: {fileID: 1961089001}
   winScreen: {fileID: 1175977127}
   whiteTurnImage: {fileID: 21300000, guid: 64246acf0aa7ff6438d42ad8594ca4c9, type: 3}
   blackTurnImage: {fileID: 21300000, guid: 8d9880b8989e6e444b2d32292146b242, type: 3}
+--- !u!114 &972082170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 972082163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dc228ccb7755de5993c6ecc739adbe4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  helpPanel: {fileID: 2046817435}
+  helpOpened:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 972082169}
+        m_MethodName: HelpOpened
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  helpClosed:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 972082169}
+        m_MethodName: HelpClosed
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!4 &989491680 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 428934, guid: c99eb2dcc3a0020489a1bad74f1de208,

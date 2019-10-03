@@ -31,10 +31,7 @@ func webHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func poorMansHTML() string {
-	baseURL := "https://storage.cloud.google.com/chessgo/"
-	linuxURL := "master/linux_chessgo_master"
-	osxURL := "master/osx_chessgo_master.tar.gz"
-	webglURL := "master/webgl"
+	webglURL := "https://storage.cloud.google.com/chessgo/master/webgl"
 
 	return fmt.Sprintf(
 		`<html lang="en-us">
@@ -51,12 +48,8 @@ func poorMansHTML() string {
     </script>
   </head>
   <body>
-	Welcome to ChessGo. Here are our beta clients to try:<br>
-	<a href="%s">ChessGo for Mac OSX</a><br>
-	<a href="%s">ChessGo for Linux</a><br><br>
-
+	Welcome to ChessGo. Play right in the browser!<br>
     <div class="webgl-content">
-      Play right in the browser!
       <div id="gameContainer" style="width: 960px; height: 600px"></div>
       <div class="footer">
         <div class="fullscreen" onclick="gameInstance.SetFullscreen(1)"></div>
@@ -66,9 +59,7 @@ func poorMansHTML() string {
 	Email chessgoinfo@gmail.com for more info.
   </body>
 </html>
-`,
-		baseURL+webglURL, baseURL+webglURL, baseURL+webglURL, baseURL+webglURL, baseURL+webglURL,
-		baseURL+osxURL, baseURL+linuxURL)
+`, webglURL, webglURL, webglURL, webglURL, webglURL)
 }
 
 func dingHandler(w http.ResponseWriter, r *http.Request) {

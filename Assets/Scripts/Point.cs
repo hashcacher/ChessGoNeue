@@ -1,7 +1,7 @@
 using System;
 namespace ChessGo
 {
-    public struct Point
+    public class Point
     {
         public int row;
         public int col;

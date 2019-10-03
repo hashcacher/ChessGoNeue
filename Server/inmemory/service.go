@@ -55,7 +55,7 @@ type GetBoardRequest struct {
 // MatchMeResponse is the format of the response sent from this endpoint
 type MatchMeResponse struct {
 	Err      string `json:"err"`
-	GameID   int    `json:"gameId"`
+	GameID   int    `json:"gameID"`
 	AreWhite bool   `json:"areWhite"`
 }
 
@@ -131,9 +131,7 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		AreWhite: game.WhiteUser == user.ID,
 	}
 	json, _ := json.Marshal(resp)
-	w.WriteHeader(500)
 	w.Write(json)
-
 }
 
 func (service *WebService) GetBoard(w http.ResponseWriter, r *http.Request) {

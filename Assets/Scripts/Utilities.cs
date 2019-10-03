@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
+using UnityEngine.Networking;
 
 
 
@@ -15,6 +17,25 @@ namespace ChessGo
         public Utilities()
         {
 
+        }
+
+        public static UnityWebRequest GoodPost(string url, string body) {
+           byte[] bytes = Encoding.ASCII.GetBytes(body);
+           var request             = new UnityWebRequest(url);
+           request.uploadHandler   = new UploadHandlerRaw(bytes);
+           request.downloadHandler = new DownloadHandlerBuffer();
+           request.method          = UnityWebRequest.kHttpVerbPOST;
+           request.timeout = 120;
+           return request;
+        }
+
+
+        public static string GetServerHost() {
+            if (Application.isEditor) {
+                return "localhost:8080";
+            } else {
+                return "https://chessgo.xyz";
+            }
         }
 
         // Returns in a list all orthogonally adjacent but not out of bound points
@@ -114,7 +135,7 @@ namespace ChessGo
         public static bool IsWhiteKingChecked(char[,] board)
         {
             //Find the black king
-            Point kingPos = new Point();
+            Point kingPos = new Point(0, 0);
 	    bool kingFound = false;
             for (int i = 0; i <= MAXROW && !kingFound; i++)
             {
@@ -132,6 +153,7 @@ namespace ChessGo
 	    if (!kingFound) {
 		//The king was not found, error
 		Debug.LogError("WHITE KING IS DEAD.");
+                return false;
 	    }
             //Check to see if there is a legal move for white onto the white king.
 
@@ -155,7 +177,7 @@ namespace ChessGo
         public static bool IsBlackKingChecked(char[,] board)
         {
             //Find the black king
-	    Point kingPos =  new Point();
+	    Point kingPos = new Point(0, 0);
 	    bool kingFound = false;
 	    for (int i = 0; i <= MAXROW && !kingFound; i++)
             {
@@ -198,7 +220,7 @@ namespace ChessGo
 
 	    if (IsBlackKingChecked (board)) {
 
-		Point kingPos = new Point();
+		Point kingPos = new Point(0, 0);
 		for (int i = 0; i <= MAXROW; i++)
 		{
 		    for (int j = 0; j <= MAXCOL; j++)
@@ -316,7 +338,7 @@ namespace ChessGo
 	{
 	    if (IsWhiteKingChecked (board)) {
 
-		Point kingPos = new Point();
+		Point kingPos = new Point(0, 0);
 		bool kingFound = false;
 		for (int i = 0; i <= MAXROW && !kingFound; i++)
 		{

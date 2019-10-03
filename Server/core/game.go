@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"log"
+	"math/rand"
 	"reflect"
 )
 
@@ -132,7 +133,16 @@ func (i GamesInteractor) StartGameCreateDaemon() {
 			WhiteUser: matchRequests[0].UserID,
 			BlackUser: matchRequests[1].UserID,
 			Board:     defaultBoard(),
+			WhiteTurn: true,
 		}
+
+		// Randomize color
+		if rand.Float32() < .5 {
+			temp := game.WhiteUser
+			game.WhiteUser = game.BlackUser
+			game.BlackUser = temp
+		}
+
 		i.games.Store(game)
 		log.Printf("INFO: Created game: %v\n", game)
 	}
