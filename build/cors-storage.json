@@ -1,0 +1,8 @@
+[
+    {
+      "origin": ["https://chessgo.xyz"],
+      "responseHeader": ["Content-Type"],
+      "method": ["GET", "HEAD"],
+      "maxAgeSeconds": 3600
+    }
+]

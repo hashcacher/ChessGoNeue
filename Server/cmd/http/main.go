@@ -19,7 +19,6 @@ func main() {
 	http.HandleFunc("/v1/getBoard", s.GetBoard)
 	http.HandleFunc("/v1/makeMove", s.MakeMove)
 	http.HandleFunc("/v1/getMove", s.GetMove)
-	// http.HandleFunc("/v1/move", s.moveHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

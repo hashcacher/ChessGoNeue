@@ -257,6 +257,12 @@ namespace ChessGo
                     MovePieceTable2D(piece, p1, p2);
 
                     CheckSurrounded(p2);
+
+                    if (Utilities.IAmBlack) {
+                        Utilities.IsBlackKingChecked()
+                    } else {
+                        Utilities.IsWhiteKingChecked()
+                    }
                 }
                 else
                 {

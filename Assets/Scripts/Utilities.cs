@@ -949,13 +949,18 @@ namespace ChessGo
 
                 int xdist = Mathf.Abs(p1.col - p2.col);
                 int ydist = Mathf.Abs(p1.row - p2.row);
-                if (xdist > 1 || ydist > 1)
-                {
+                if (xdist > 1 || ydist > 1) {
                     return false;
                 }
-                else
-                {
-                    return (IsEmptyAt(p2, board) || IsBlackAt(p2, board));
+                else if (IsEmptyAt(p2, board) || IsWhiteAt(p2, board)) {
+                    char[,] attemptBoard = (char[,])board.Clone();
+
+                    attemptBoard[p1.row, p1.col] = '\0';
+                    attemptBoard[p2.col, p2.col] = 'k';
+
+                    return !IsWhiteChecked(attemptBoard);
+                } else {
+                    return false;
                 }
             }
             else if (piece == 'K')
@@ -968,9 +973,15 @@ namespace ChessGo
                 {
                     return false;
                 }
-                else
-                {
-                    return (IsEmptyAt(p2, board) || IsWhiteAt(p2, board));
+                else if (IsEmptyAt(p2, board) || IsWhiteAt(p2, board)) {
+                    char[,] attemptBoard = (char[,])board.Clone();
+
+                    attemptBoard[p1.row, p1.col] = '\0';
+                    attemptBoard[p2.col, p2.col] = 'K';
+
+                    return !IsBlackChecked(attemptBoard);
+                } else {
+                    return false;
                 }
             }
             return false;
