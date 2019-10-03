@@ -47,7 +47,7 @@ func poorMansHTML() string {
     <script src="%s/TemplateData/UnityProgress.js"></script>
     <script src="%s/Build/UnityLoader.js"></script>
     <script>
-      var gameInstance = UnityLoader.instantiate("gameContainer", "%s/Build/webgl-build.json", {onProgress: UnityProgress});
+      var gameInstance = UnityLoader.instantiate("gameContainer", "%s/Build/webgl.json", {onProgress: UnityProgress});
     </script>
   </head>
   <body>
