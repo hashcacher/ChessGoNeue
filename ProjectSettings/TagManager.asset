@@ -20,13 +20,13 @@ TagManager:
   - 
   - 
   - Board
+  - BlackPieces
+  - 2DPieces
   - 
   - 
   - 
   - 
-  - 
-  - 
-  - 
+  - "\x1A\x1A"
   - 
   - 
   - 

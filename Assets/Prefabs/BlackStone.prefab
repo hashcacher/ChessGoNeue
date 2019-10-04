@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2374452}
   - component: {fileID: 6519776}
   - component: {fileID: 5476060}
-  m_Layer: 8
+  m_Layer: 9
   m_Name: BlackStone
   m_TagString: Stone
   m_Icon: {fileID: 0}
@@ -59,7 +59,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 4258186aef12ba84d8039d027f816efd, type: 2}
+  - {fileID: 2100000, guid: b17a84fffeb97494e90f5a83c85a95bf, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

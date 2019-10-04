@@ -16,6 +16,7 @@ namespace ChessGo
         public GameObject BottomRight;
 
         public GameObject table;
+        public GameObject tableTop;
         public GameObject cameraLight;
 
         //Prefabs
@@ -106,6 +107,8 @@ namespace ChessGo
         void Awake() {
             //Find objects
             canvas = Camera.main.transform.Find("Canvas").transform;
+            table = GameObject.Find("Table");
+            tableTop = GameObject.Find("TableTop");
             winPanel = canvas.Find("Win Panel").GetComponent<RectTransform>();
             winPanel.gameObject.SetActive(false);
 
@@ -320,33 +323,26 @@ namespace ChessGo
                 {
                     //Black piece
                     Point p = new Point(x, y);
-                    Vector3 target = GetWorldAtPoint(p, table);
+                    Vector3 target = GetWorldAtPoint(p, tableTop) + new Vector3(0, 2, 0);
 
                     Vector3 direction = target - camera.transform.position;
                     RaycastHit hit;
-                    if (Physics.Raycast(camera.transform.position, direction, out hit, Mathf.Infinity, (1 << LayerMask.NameToLayer("Board"))))
+                    if (Physics.Raycast(camera.transform.position, direction, out hit, Mathf.Infinity, (1 << LayerMask.NameToLayer("2DPieces"))))
                     {
                         pieces2D[x, y] = hit.transform.gameObject;
                         hit.transform.gameObject.SetActive(false);
-                        if(hit.transform.name == "Table") {
-                            Debug.Log(x + " " + y);
-                        }
                     }
                     else
                         Debug.LogError("Missed the 2D piece: " + p);
 
                     //White piece
                     p = new Point(x, 7-y);
-                    target = GetWorldAtPoint(p, table);
-
+                    target = GetWorldAtPoint(p, tableTop) + new Vector3(0, 2, 0);
                     direction = target - camera.transform.position;
-                    Physics.Raycast(camera.transform.position, direction, out hit, Mathf.Infinity, (1 << LayerMask.NameToLayer("Board")));
+                    Physics.Raycast(camera.transform.position, direction, out hit, Mathf.Infinity, (1 << LayerMask.NameToLayer("2DPieces")));
 
                     pieces2D[x, 7-y] = hit.transform.gameObject;
                     hit.transform.gameObject.SetActive(false);
-                        if(hit.transform.name == "Table") {
-                            Debug.Log(x + " " + (7-y));
-                        }
                 }
             }
         }
@@ -424,8 +420,6 @@ namespace ChessGo
             if (Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0)
             {
                 Point p = CurrentlyDraggingChessPiece() ? ClosestPoint(grabbed.transform.position) : GetSquareUnderMouse();
-                //if(Input.GetKey(KeyCode.D))
-                //    Debug.Log("Mouseing over square: " + p);
 
                 if (p.col != -1)
                 {
@@ -463,7 +457,8 @@ namespace ChessGo
                             if (IsMyPiece(go))
                             {
                                 pieceHighlight = go.GetComponent<MeshRenderer>();
-                                mouseHighlightColor = Color.black;
+                                Renderer rend = pieceHighlight.GetComponent<Renderer>();
+                                mouseHighlightColor = rend.material.GetColor("_EmissionColor");
                                 pieceHighlight.material.EnableKeyword("_EMISSION");
                                 pieceHighlight.material.SetColor("_EmissionColor", new Color(.4f, 1f, .2f, 1f) * .5f);
                             }
@@ -477,22 +472,20 @@ namespace ChessGo
 
         void ResetMouseOver()
         {
-            if (mouseHighlight != null)
-            {
-                if (mouseHighlight.name == "ValidMove(Clone)") //the little red circle
-                {
+            if (mouseHighlight != null) {
+                //the little red circle 
+                if (mouseHighlight.name == "ValidMove(Clone)") {
                     mouseHighlight.SetActive(false);
                 }
                 else {
-                    mouseHighlight.GetComponent<Renderer>().material.SetColor("_EmissionColor", mouseHighlightColor);
+                    mouseHighlight.GetComponent<Renderer>()
+                        .material.SetColor("_EmissionColor", mouseHighlightColor);
                 }
                 mouseHighlight = null;
             }
-            if (pieceHighlight != null)
-            {
-                //Debug.Log("emission was " + pieceHighlight.material.GetColor("_EmissionColor"));
+            if (pieceHighlight != null) {
                 pieceHighlight.material.SetColor("_EmissionColor", mouseHighlightColor);
-
+                pieceHighlight = null;
             }
         }
 
@@ -882,31 +875,28 @@ namespace ChessGo
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, 1 << LayerMask.NameToLayer("Board")))
             { //cast a ray and save hit to hit var
-                if (hit.transform.position.y == 0) //if we hit the board
+                if (ClickedWithinGrid(hit.point)) //inside the grid
                 {
-                    if (ClickedWithinGrid(hit.point)) //inside the grid
+                    //get the row and column they clicked
+                    Point p = ClosestPoint(hit.point);
+
+                    //if they clicked in an empty spot
+                    if (GetBoardPiece(p) == '\0')
                     {
-                        //get the row and column they clicked
-                        Point p = ClosestPoint(hit.point);
+                        //place either white or black Stone.
+                        PlaceStone(p, IAmBlack ? 'S' : 's');
+                        StartCoroutine(SendMoveToServer(p, null));
 
-                        //if they clicked in an empty spot
-                        if (GetBoardPiece(p) == '\0')
+                        if (usingServer)
+                            EndTurn();
+                        else
                         {
-                            //place either white or black Stone.
-                            PlaceStone(p, IAmBlack ? 'S' : 's');
-                            StartCoroutine(SendMoveToServer(p, null));
-
-                            if (usingServer)
-                                EndTurn();
-                            else
-                            {
-                                preventMoves = true;
-                                yield return new WaitForSeconds(.8f); //wait for the stone to drop
-                                EndTurnHotseat();
-                                preventMoves = false;
-                            }
+                            preventMoves = true;
+                            yield return new WaitForSeconds(.8f); //wait for the stone to drop
+                            EndTurnHotseat();
+                            preventMoves = false;
                         }
                     }
                 }
@@ -953,10 +943,10 @@ namespace ChessGo
 
         void EndTurnHotseat()
         {
-			if (!gameOver) {
-				IAmBlack = !IAmBlack;
-				StartTurn ();
-				StartCoroutine (Rotate180 (camera.transform));
+	    if (!gameOver) {
+		IAmBlack = !IAmBlack;
+		StartTurn ();
+		StartCoroutine (Rotate180 (camera.transform));
             }
         }
 
