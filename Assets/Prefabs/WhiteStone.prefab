@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2397926}
   - component: {fileID: 5486190}
   - component: {fileID: 6586190}
+  - component: {fileID: 114154690290292338}
   m_Layer: 8
   m_Name: WhiteStone
   m_TagString: Stone
@@ -29,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 197926}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -7.8, y: 35, z: -0.4}
-  m_LocalScale: {x: 20, y: 21.34989, z: 20}
+  m_LocalScale: {x: 17.29, y: 18.45698, z: 17.29}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -108,3 +109,16 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.31966317, y: 0.28083968, z: 0.30191886}
   m_Center: {x: 0.010082059, y: -0.0148932105, z: -0.0051532164}
+--- !u!114 &114154690290292338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 197926}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f4a5d41ec5b74672b5fe9ee0af01d9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  secondsTillOff: 0.25

@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2374452}
   - component: {fileID: 6519776}
   - component: {fileID: 5476060}
+  - component: {fileID: 114348012222546142}
   m_Layer: 9
   m_Name: BlackStone
   m_TagString: Stone
@@ -29,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 174452}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 35, z: 0}
-  m_LocalScale: {x: 35, y: 44.7168, z: 35}
+  m_LocalScale: {x: 31.5, y: 40.24512, z: 31.5}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -108,3 +109,16 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &114348012222546142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 174452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f4a5d41ec5b74672b5fe9ee0af01d9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  secondsTillOff: 0.25

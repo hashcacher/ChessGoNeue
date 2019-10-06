@@ -1,42 +1,13 @@
-using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
-
-
-namespace ChessGo
-{
+namespace ChessGo {
     //Static methods for computing Go surrounds, valid moves, etc.
-    public class Utilities
-    {
+    public class Algos {
         private const int MAXROW = 7;
         private const int MAXCOL = 7;
-
-        public Utilities()
-        {
-
-        }
-
-        public static UnityWebRequest GoodPost(string url, string body) {
-           byte[] bytes = Encoding.ASCII.GetBytes(body);
-           var request             = new UnityWebRequest(url);
-           request.uploadHandler   = new UploadHandlerRaw(bytes);
-           request.downloadHandler = new DownloadHandlerBuffer();
-           request.method          = UnityWebRequest.kHttpVerbPOST;
-           request.timeout = 120;
-           return request;
-        }
-
-
-        public static string GetServerHost() {
-            if (Application.isEditor) {
-                return "localhost:8080";
-            } else {
-                return "https://chessgo.xyz";
-            }
-        }
 
         // Returns in a list all orthogonally adjacent but not out of bound points
         public static HashSet<Point> GetAdjacentPoints(Point p)
@@ -113,8 +84,7 @@ namespace ChessGo
         public static bool IsGroupDead(Point p, char[,] board)
         {
             HashSet<Point> liberties = GetLiberties(p, board);
-            foreach (Point l in liberties)
-            {
+            foreach (Point l in liberties) {
                 if (IsEmptyAt(l, board)) { return false; }
             }
             return true;
@@ -124,8 +94,7 @@ namespace ChessGo
 	{
 	    HashSet<Point> liberties = GetLiberties(p, board);
 	    int count = 0;
-	    foreach (Point l in liberties)
-	    {
+	    foreach (Point l in liberties) {
 		if (IsEmptyAt(l, board)) { count++; }
 	    }
 	    return count;
@@ -995,82 +964,5 @@ namespace ChessGo
                 return moves;
             }
         }
-
-
-
-        public static IEnumerator<GameObject> FadeOut(GameObject o, float duration)
-        {
-            float t = 0f;
-
-            Renderer r = o.GetComponent<Renderer>();
-            Color newColor = r.material.color;
-            newColor.a = 0;
-
-            while (t < 1)
-            {
-                r.material.color = Color.Lerp(r.material.color, newColor, t);
-                t += Time.deltaTime / duration;
-                yield return null;
-            }
-            o.SetActive(false);
-        }
-
-        public static IEnumerator<GameObject> FadeIn(GameObject o, float duration)
-        {
-            float t = 0f;
-
-            Renderer r = o.GetComponent<Renderer>();
-            Color newColor = r.material.color;
-            newColor.a = 1.0f;
-
-            o.SetActive(true);
-            while (t < 1)
-            {
-                r.material.color = Color.Lerp(r.material.color, newColor, t);
-                t += Time.deltaTime / duration;
-                yield return null;
-            }
-
-        }
-
-        // Moves a on object o smoothly
-        public static IEnumerator<GameObject> SmoothMove(Transform o, Transform end, float seconds)
-        {
-            float t = 0.0f;
-            Vector3 startpos = o.transform.position;
-            Quaternion startrot = o.transform.rotation;
-            while (t <= 1.0f)
-            {
-                t += Time.deltaTime / seconds;
-                o.position = Vector3.Lerp(startpos, end.position, Mathf.SmoothStep(0.0f, 1.0f, t));
-                o.rotation = Quaternion.Lerp(startrot, end.rotation, Mathf.SmoothStep(0.0f, 1.0f, t));
-                yield return null;
-            }
-        }
-
-        // Moves a on object o smoothly
-        public static IEnumerator<GameObject> SmoothMove(Transform o, Vector3 endpos, float seconds)
-        {
-            float t = 0.0f;
-            Vector3 startpos = o.transform.position;
-            while (t <= 1.0f)
-            {
-                t += Time.deltaTime / seconds;
-                o.position = Vector3.Lerp(startpos, endpos, Mathf.SmoothStep(0.0f, 1.0f, t));
-                yield return null;
-            }
-        }
-
-        internal static IEnumerator<GameObject> SmoothMoveUI(RectTransform rt, Vector3 startPos, Vector3 endPos, float time)
-        {
-            float elapsed = 0;
-            while (elapsed < time)
-            {
-                elapsed += Time.deltaTime;
-                rt.anchoredPosition3D = Vector3.Lerp(startPos, endPos, Mathf.SmoothStep(0, 1, elapsed/time));
-                yield return null;
-            }
-        }
     }
 }
-

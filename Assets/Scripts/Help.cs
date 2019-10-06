@@ -21,7 +21,7 @@ namespace ChessGo {
             Vector3 startPos = new Vector3(0, 500, -20);
             Vector3 endPos = new Vector3(0, -230, -20);
             helpOpened.Invoke();
-            StartCoroutine(Utilities.SmoothMoveUI(helpPanel, startPos, endPos, .5f));
+            StartCoroutine(Util.SmoothMoveUI(helpPanel, startPos, endPos, .5f));
         }
 
         public void CloseHelp()
@@ -33,7 +33,7 @@ namespace ChessGo {
         {
             Vector3 startPos = new Vector3(0, -230, -20);
             Vector3 endPos = new Vector3(0, -1230, -20);
-            StartCoroutine(Utilities.SmoothMoveUI(helpPanel, startPos, endPos, .5f));
+            StartCoroutine(Util.SmoothMoveUI(helpPanel, startPos, endPos, .5f));
             yield return new WaitForSeconds(.5f);
             helpPanel.gameObject.SetActive(false);
             helpClosed.Invoke();

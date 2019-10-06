@@ -34,8 +34,8 @@ namespace ChessGo {
                 request.secret = UnitySingleton.secret;
                 request.gameID = UnitySingleton.gameID;
                 var msg = JsonUtility.ToJson(request);
-                var host = Utilities.GetServerHost(); // Post to our api
-                using (UnityWebRequest www = Utilities.GoodPost(host + "/v1/getChat", msg))
+                var host = Net.GetServerHost(); // Post to our api
+                using (UnityWebRequest www = Net.GoodPost(host + "/v1/getChat", msg))
                 {
                     yield return www.SendWebRequest();
 

@@ -77,10 +77,10 @@ namespace ChessGo
             var request = new MatchRequest();
             request.secret = UnitySingleton.secret;
             var msg = JsonUtility.ToJson(request);
-            var host = Utilities.GetServerHost();
+            var host = Net.GetServerHost();
 
             // Post to our api
-            using (UnityWebRequest www = Utilities.GoodPost(host + "/v1/matchMe", msg))
+            using (UnityWebRequest www = Net.GoodPost(host + "/v1/matchMe", msg))
             {
                 matching = true;
                 yield return www.SendWebRequest();

@@ -194,8 +194,8 @@ namespace ChessGo
                 request.secret = UnitySingleton.secret;
                 request.gameID = UnitySingleton.gameID;
                 var msg = JsonUtility.ToJson(request);
-                var host = Utilities.GetServerHost(); // Post to our api
-                using (UnityWebRequest www = Utilities.GoodPost(host + "/v1/getMove", msg))
+                var host = Net.GetServerHost(); // Post to our api
+                using (UnityWebRequest www = Net.GoodPost(host + "/v1/getMove", msg))
                 {
                     Debug.Log("Receiving");
                     yield return www.SendWebRequest();
@@ -240,6 +240,7 @@ namespace ChessGo
             //the move was a Go stone placement
             if (squares.Length == 1) {
                 PlaceGoStone(p1);
+                CheckSurrounded(p1);
             }
 
             //the move was a chess move
@@ -274,8 +275,8 @@ namespace ChessGo
 	    gameOver = true;
 	    // Spam Stones
 	    for (int n = 1; n <= 4; n++) {
-		for (int x = 0; x < 12; x++) {
-		    for (int y = 0; y < 12; y++) {
+		for (int x = 0; x < 8; x++) {
+		    for (int y = 0; y < 8; y++) {
 			if(board[x,y] == '\0')	PlaceStone (new Point (x, y),IAmBlack ? 'S' : 's');
 		    }
 		    yield return null;
@@ -375,34 +376,33 @@ namespace ChessGo
         {
             foreach (Transform o in chess2D.transform)
             {
-                StartCoroutine(Utilities.FadeOut(o.gameObject, 1f)); //fade it out over 1 second
+                StartCoroutine(Util.FadeOut(o.gameObject, 1f)); //fade it out over 1 second
             }
         }
 
         void Show3DPieces()
         {
-            foreach (GameObject o in pieces)
-            {
-                if(o != null)
-                    StartCoroutine(Utilities.FadeIn(o, 1f)); //fade it out over 1 second
+            foreach (GameObject o in pieces) {
+                if(o != null) {
+                    StartCoroutine(Util.FadeIn(o, 1f)); //fade it out over 1 second
+                }
             }
         }
 
         void Show2DPieces()
         {
             chess2D.SetActive(true);
-            foreach (Transform o in chess2D.transform)
-            {
-                StartCoroutine(Utilities.FadeIn(o.gameObject, 1f)); //fade it out over 1 second
+            foreach (Transform o in chess2D.transform) {
+                StartCoroutine(Util.FadeIn(o.gameObject, 1f)); //fade it out over 1 second
             }
         }
 
         void Hide3DPieces()
         {
-            foreach (GameObject o in pieces)
-            {
-                if (o != null && o.tag != "Stone")
-                    StartCoroutine(Utilities.FadeOut(o, 1f)); //fade it out over 1 second
+            foreach (GameObject o in pieces) {
+                if (o != null && o.tag != "Stone") {
+                    StartCoroutine(Util.FadeOut(o, 1f)); //fade it out over 1 second
+                }
             }
         }
 
@@ -410,8 +410,9 @@ namespace ChessGo
         Transform GetCameraHotspot(string s)
         {
             Transform t = cameraHotspots.transform.Find(s);
-            if (t == null)
+            if (t == null) {
                 Debug.LogError("No camera hotspot named " + s);
+            }
             return t;
         }
 
@@ -437,7 +438,7 @@ namespace ChessGo
 
                     if (CurrentlyDraggingChessPiece())
                     {
-                        if (Utilities.IsValidMove(grabbedInitialPoint, p, board) && !Utilities.IsEmptyAt(p, board))
+                        if (Algos.IsValidMove(grabbedInitialPoint, p, board) && !Algos.IsEmptyAt(p, board))
                         {
                             mouseHighlight = GetPieceAtPoint(p).gameObject;
                             Renderer rend = mouseHighlight.GetComponent<Renderer>();
@@ -447,7 +448,7 @@ namespace ChessGo
                     }
                     else
                     {
-                        if (Utilities.IsEmptyAt(p, board))
+                        if (Algos.IsEmptyAt(p, board))
                         {
                             mouseHighlight = CreateHighlight(validMove, p.row, p.col);
                         }
@@ -460,7 +461,7 @@ namespace ChessGo
                                 Renderer rend = pieceHighlight.GetComponent<Renderer>();
                                 mouseHighlightColor = rend.material.GetColor("_EmissionColor");
                                 pieceHighlight.material.EnableKeyword("_EMISSION");
-                                pieceHighlight.material.SetColor("_EmissionColor", new Color(.4f, 1f, .2f, 1f) * .5f);
+                                //pieceHighlight.material.SetColor("_EmissionColor", new Color(.4f, 1f, .2f, 1f) * .5f);
                             }
                         }
                     }
@@ -534,7 +535,7 @@ namespace ChessGo
 
         GameObject CreatePiece(GameObject o, int row, int col)
         {
-            board[row, col] = Utilities.GetCharForPiece(o);
+            board[row, col] = Algos.GetCharForPiece(o);
             pieces[row, col] = Instantiate(o, GetWorldAtPoint(new Point(row, col), o), Quaternion.identity) as GameObject;
             return pieces[row, col];
         }
@@ -543,12 +544,12 @@ namespace ChessGo
         {
             int nextHotspot = (IAmBlack ? (++curHotspot) : (--curHotspot)) % (cameraHotspots.transform.childCount - 1);
             Transform t = cameraHotspots.transform.GetChild(Mathf.Abs(nextHotspot));
-            StartCoroutine(Utilities.SmoothMove(camera.transform, t, 1.0f));
+            StartCoroutine(Util.SmoothMove(camera.transform, t, 1.0f));
         }
 
         void RotateCamera(Transform t)
         {
-            StartCoroutine(Utilities.SmoothMove(camera.transform, t, 1.0f));
+            StartCoroutine(Util.SmoothMove(camera.transform, t, 1.0f));
         }
 
         private void StartTurn()
@@ -650,14 +651,14 @@ namespace ChessGo
                         EndTurnHotseat();
                 }
                 else //put it back
-                    StartCoroutine(Utilities.SmoothMove(grabbed, grabbedPrevPos, .2f));
+                    StartCoroutine(Util.SmoothMove(grabbed, grabbedPrevPos, .2f));
             }
             grabbed = null;
         }
 
         IEnumerator SendMoveToServer(Point p1, Point p2)
         {
-                Debug.LogError("sending move1");
+            Debug.LogError("sending move1");
             if (!usingServer)
                 yield break;
 
@@ -670,8 +671,8 @@ namespace ChessGo
             }
 
             var msg = JsonUtility.ToJson(request);
-            var host = Utilities.GetServerHost(); // Post to our api
-            using (UnityWebRequest www = Utilities.GoodPost(host + "/v1/makeMove", msg)) {
+            var host = Net.GetServerHost(); // Post to our api
+            using (UnityWebRequest www = Net.GoodPost(host + "/v1/makeMove", msg)) {
                 Debug.LogError("sending move2");
                     yield return www.SendWebRequest();
 
@@ -726,7 +727,7 @@ namespace ChessGo
             else
             {
                 Point p = GetSquareUnderMouse();
-                if (p.col == -1 || Utilities.IsEmptyAt(p, board))
+                if (p.col == -1 || Algos.IsEmptyAt(p, board))
                 {
                     return false;
                 }
@@ -751,7 +752,8 @@ namespace ChessGo
                     }
                     //set the object to ignore raycasts
                     grabLayerMask = grabbed.gameObject.layer;
-                    grabbed.gameObject.layer = 2;
+                    //grabbed.gameObject.layer = 2;
+
                     //now immediately do another raycast to calculate the offset
                     RaycastHit hit;
                     Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -762,7 +764,7 @@ namespace ChessGo
 
                         grabbedInitialPoint = ClosestPoint(grabbed.transform.position);
                         CreateHighlight(greenSquareHighlight, grabbedInitialPoint.row, grabbedInitialPoint.col);
-                        List<Point> pointsToHighlight = Utilities.GetValidDestinations(grabbedInitialPoint, board);
+                        List<Point> pointsToHighlight = Algos.GetValidDestinations(grabbedInitialPoint, board);
                         HighlightPoints(pointsToHighlight);
                         return true;
                     }
@@ -795,7 +797,9 @@ namespace ChessGo
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, boardLayerBitmask))
             {
-                grabbed.position = hit.point + grabOffset;
+                Vector3 newPos = hit.point + grabOffset;
+                newPos.y = tableTop.transform.position.y + grabbed.GetComponent<Collider>().bounds.extents.y * 2;
+                grabbed.position = newPos;
             }
         }
 
@@ -889,12 +893,14 @@ namespace ChessGo
                         PlaceStone(p, IAmBlack ? 'S' : 's');
                         StartCoroutine(SendMoveToServer(p, null));
 
-                        if (usingServer)
+                        yield return new WaitForSeconds(.8f); //wait for the stone to drop
+                        CheckSurrounded(p);
+
+                        if (usingServer) {
                             EndTurn();
-                        else
-                        {
+                        }
+                        else {
                             preventMoves = true;
-                            yield return new WaitForSeconds(.8f); //wait for the stone to drop
                             EndTurnHotseat();
                             preventMoves = false;
                         }
@@ -959,7 +965,7 @@ namespace ChessGo
             pieces[p2.row, p2.col] = pieces[p1.row, p1.col];
             pieces[p1.row, p1.col] = null;
 
-            StartCoroutine(Utilities.SmoothMove(chessPiece, targetLocation, .2f));
+            StartCoroutine(Util.SmoothMove(chessPiece, targetLocation, .2f));
 
             return true;
         }
@@ -973,7 +979,7 @@ namespace ChessGo
             pieces2D[p2.row, p2.col] = pieces2D[p1.row, p1.col];
             pieces2D[p1.row, p1.col] = null;
 
-            StartCoroutine(Utilities.SmoothMove(chessPiece, targetLocation, .2f));
+            StartCoroutine(Util.SmoothMove(chessPiece, targetLocation, .2f));
 
             return true;
         }
@@ -987,7 +993,7 @@ namespace ChessGo
                 Debug.Log("no piece here");
                 return false;
             }
-            else if (Utilities.IsValidMove(p1, p2, board)) {
+            else if (Algos.IsValidMove(p1, p2, board)) {
                 Destroy(pieces[p2.row, p2.col]);
                 Destroy(pieces2D[p2.row, p2.col]);
 
@@ -1043,12 +1049,16 @@ namespace ChessGo
         public void CheckSurrounded(Point p)
         {
             if (!gameOver) {
-                HashSet<Point> affected = Utilities.GetAdjacentPoints (p);
+                HashSet<Point> affected = Algos.GetAdjacentPoints (p);
                 foreach (Point a in affected) {
+                    if (board[a.row, a.col] == '\0') {
+                        continue;
+                    }
+
                     //See if the group has now been surrounded
-                    if (Utilities.IsGroupDead (a, board)) {
+                    if (Algos.IsGroupDead (a, board)) {
                         //Kill the group
-                        HashSet<Point> targets = Utilities.GetGroup (a, board);
+                        HashSet<Point> targets = Algos.GetGroup (a, board);
                         foreach (Point t in targets) {
                             KillAtPoint (t);
                         }
