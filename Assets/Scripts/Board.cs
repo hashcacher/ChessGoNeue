@@ -197,9 +197,7 @@ namespace ChessGo
                 var host = Net.GetServerHost(); // Post to our api
                 using (UnityWebRequest www = Net.GoodPost(host + "/v1/getMove", msg))
                 {
-                    Debug.Log("Receiving");
                     yield return www.SendWebRequest();
-                    Debug.Log("Received");
 
                     if (www.isNetworkError) {
                         // Exponential backoff
@@ -207,7 +205,7 @@ namespace ChessGo
                         this.failedReceives++;
                         yield return new WaitForSeconds(Mathf.Pow(2f, this.failedReceives) / 10f * Random.Range(.5f, 1.0f));
 
-                        if (this.failedReceives >= 10) {
+                        if (this.failedReceives <= 10) {
                             // TODO spinning beachball?
                         } else {
                             Debug.LogError("Gave up on server");
@@ -231,11 +229,13 @@ namespace ChessGo
         }
 
 
+        // Client works in X,Y, which is the opposite of row,col in the server
+        // Hence, we parse the [1] as X and [0] as Y
         void MakeReceivedMove(string move) {
             //get board coords
             string[] squares = move.Split('>');
             string[] fromIndices = squares[0].Split(',');
-            Point p1 = new Point(int.Parse(fromIndices[0]), int.Parse(fromIndices[1]));
+            Point p1 = new Point(int.Parse(fromIndices[1]), int.Parse(fromIndices[0]));
 
             //the move was a Go stone placement
             if (squares.Length == 1) {
@@ -246,7 +246,7 @@ namespace ChessGo
             //the move was a chess move
             else {
                 string[] toIndices = squares[1].Split(',');
-                Point p2 = new Point(int.Parse(toIndices[0]), int.Parse(toIndices[1]));
+                Point p2 = new Point(int.Parse(toIndices[1]), int.Parse(toIndices[0]));
 
                 //checks if move is valid, if so it updates board[][]
                 if (MovePieceBoard(p1, p2))
@@ -283,7 +283,6 @@ namespace ChessGo
 		}
 
 	    }
-
 	}
 
         // Spins an object (the camera) to the other side of the board

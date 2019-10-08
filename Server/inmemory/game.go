@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
+	"os"
 	"strings"
 )
 
@@ -107,7 +108,9 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 			return errors.New("Nothing at " + squares[0])
 		}
 
-		fmt.Printf("%d,%d -> %d,%d", fromX, fromY, toX, toY)
+		if os.Getenv("DEBUG") == "true" {
+			fmt.Printf("Game %d user %s: %d,%d -> %d,%d\n", game.ID, user.ID, fromX, fromY, toX, toY)
+		}
 
 		game.Board[toX][toY] = game.Board[fromX][fromY]
 		game.Board[fromX][fromY] = ' '

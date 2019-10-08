@@ -14,7 +14,7 @@ namespace ChessGo
 
         public override string ToString()
         {
-            return row + "," + col;
+            return col + "," + row; // array indices are backwards from X,Y coordinates
         }
 
 

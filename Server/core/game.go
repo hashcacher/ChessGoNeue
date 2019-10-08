@@ -2,8 +2,10 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"reflect"
 )
 
@@ -144,7 +146,7 @@ func (i GamesInteractor) StartGameCreateDaemon() {
 		}
 
 		i.games.Store(game)
-		log.Printf("INFO: Created game: %v\n", game)
+		log.Printf("INFO: Created game: %+v\n", game)
 	}
 }
 
@@ -178,6 +180,11 @@ func (i *GamesInteractor) MakeMove(secret string, gameId int, move string) error
 	game := games[0] // TODO take gameID into account
 	if game.WhiteTurn && game.WhiteUser != user.ID ||
 		!game.WhiteTurn && game.BlackUser != user.ID {
+
+		if os.Getenv("DEBUG") == "true" {
+			fmt.Printf("Wrong turn for user %s for game: %+v\n", secret, game)
+		}
+
 		return errors.New("not your turn")
 	}
 
