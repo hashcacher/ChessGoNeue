@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
-	"os"
 	"strings"
 )
 
@@ -31,24 +30,26 @@ func (g *Games) getNextAutoincrementID() int {
 	return g.autoIncrement
 }
 
-func (g *Games) Store(game core.Game) (int, error) {
+func (g *Games) Store(game *core.Game) (int, error) {
 	game.ID = g.getNextAutoincrementID()
-	g.games[game.ID] = game
+	g.games[game.ID] = *game
+
 	// Notify for white user
 	notifyChannel, ok := g.storedEventsByUserID[game.WhiteUser]
 	if !ok {
 		notifyChannel = make(chan *core.Game, 2)
 		g.storedEventsByUserID[game.WhiteUser] = notifyChannel
 	}
-	notifyChannel <- &game
+	notifyChannel <- game
+
 	// Notify for black user
 	notifyChannel, ok = g.storedEventsByUserID[game.BlackUser]
 	if !ok {
 		notifyChannel = make(chan *core.Game, 2)
 		g.storedEventsByUserID[game.BlackUser] = notifyChannel
 	}
-	notifyChannel <- &game
-	// Return
+	notifyChannel <- game
+
 	return game.ID, nil
 }
 
@@ -77,7 +78,7 @@ func (g *Games) FindById(id int) (core.Game, error) {
 }
 
 func (g *Games) FindByUserId(userID int) ([]*core.Game, error) {
-	games := make([]*core.Game, 0)
+	games := []*core.Game{}
 	for _, game := range g.games {
 		if game.BlackUser == userID || game.WhiteUser == userID {
 			games = append(games, &game)
@@ -108,9 +109,7 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 			return errors.New("Nothing at " + squares[0])
 		}
 
-		if os.Getenv("DEBUG") == "true" {
-			fmt.Printf("Game %d user %s: %d,%d -> %d,%d\n", game.ID, user.ID, fromX, fromY, toX, toY)
-		}
+		core.Debug(fmt.Sprintf("Game %d user %d: %d,%d -> %d,%d\n", game.ID, user.ID, fromX, fromY, toX, toY))
 
 		game.Board[toX][toY] = game.Board[fromX][fromY]
 		game.Board[fromX][fromY] = ' '

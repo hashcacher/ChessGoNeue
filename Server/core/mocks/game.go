@@ -77,7 +77,7 @@ func (mr *MockGamesMockRecorder) GetBoard(arg0 interface{}) *gomock.Call {
 }
 
 // Store mocks base method
-func (m *MockGames) Store(arg0 core.Game) (int, error) {
+func (m *MockGames) Store(arg0 *core.Game) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Store", arg0)
 	ret0, _ := ret[0].(int)

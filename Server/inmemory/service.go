@@ -115,6 +115,8 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		}(matchMeReq.secret)
 	*/
 
+	core.Debug(fmt.Sprintf("Matchme request for user %d", user.ID))
+
 	// Wait for match
 	game, err := service.matchRequestsInteractor.MatchMe(user.ID)
 	if err != nil {
@@ -132,6 +134,8 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 	}
 	json, _ := json.Marshal(resp)
 	w.Write(json)
+
+	core.Debug("MatchMe succeeded")
 }
 
 func (service *WebService) GetBoard(w http.ResponseWriter, r *http.Request) {
@@ -144,6 +148,8 @@ func (service *WebService) GetBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	core.Debug(fmt.Sprintf("getboard request for user %s gameid %d", request.Secret, request.GameID))
+
 	board, err := service.gamesInteractor.GetBoard(request.Secret, request.GameID)
 	if err != nil {
 		w.WriteHeader(500)
@@ -154,6 +160,8 @@ func (service *WebService) GetBoard(w http.ResponseWriter, r *http.Request) {
 	for _, row := range board {
 		w.Write(append(row[:], '\n'))
 	}
+
+	core.Debug("Getboard succeeded")
 }
 
 func (service *WebService) MakeMove(w http.ResponseWriter, r *http.Request) {
@@ -165,6 +173,8 @@ func (service *WebService) MakeMove(w http.ResponseWriter, r *http.Request) {
 		w.Write(errorResponse(errors.New("invalid arguments")))
 		return
 	}
+
+	core.Debug(fmt.Sprintf("MakeMove request for user %s gameid %d move %s", request.Secret, request.GameID, request.Move))
 
 	err = service.gamesInteractor.MakeMove(request.Secret, request.GameID, request.Move)
 	if err != nil {
@@ -178,6 +188,8 @@ func (service *WebService) MakeMove(w http.ResponseWriter, r *http.Request) {
 	}
 	json, _ := json.Marshal(resp)
 	w.Write([]byte(json))
+
+	core.Debug("MakeMove succeeded")
 }
 
 func (service *WebService) GetMove(w http.ResponseWriter, r *http.Request) {
@@ -190,6 +202,8 @@ func (service *WebService) GetMove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	core.Debug(fmt.Sprintf("GetMove request for user %s gameid %d", request.Secret, request.GameID))
+
 	move, err := service.gamesInteractor.GetMove(request.Secret, request.GameID)
 	if err != nil {
 		w.WriteHeader(400)
@@ -200,4 +214,6 @@ func (service *WebService) GetMove(w http.ResponseWriter, r *http.Request) {
 	resp := GetMoveResponse{move}
 	json, _ := json.Marshal(resp)
 	w.Write([]byte(json))
+
+	core.Debug("GetMove succeeded")
 }

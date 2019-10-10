@@ -38,3 +38,5 @@ sysinfo.txt
 
 linux.x86_64
 linux_Data
+*.sw*
+Server/__debug_bin

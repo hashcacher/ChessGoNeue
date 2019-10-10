@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
 	"reflect"
 )
 
@@ -23,7 +22,7 @@ type Games interface {
 	MakeMove(*Game, *User, string) error
 	GetMove(*Game, *User) (string, error)
 	GetBoard(*Game) (board [8][8]byte)
-	Store(Game) (id int, err error)
+	Store(*Game) (id int, err error)
 	ListenForStoreByUserID(userID int) (*Game, error)
 	ListenForMoveByUserID(userID int) (string, error)
 	FindById(id int) (Game, error)
@@ -50,7 +49,7 @@ func NewGamesInteractor(games Games, users Users, matchRequests MatchRequests) G
 }
 
 // Create validates an incoming game's data (users, board) and then stores it
-func (i *GamesInteractor) Create(game Game) (id int, err error) {
+func (i *GamesInteractor) Create(game *Game) (id int, err error) {
 	if game.WhiteUser == game.BlackUser {
 		return 0, errors.New("you cannot play a game with yourself")
 	}
@@ -74,7 +73,8 @@ func (i *GamesInteractor) Create(game Game) (id int, err error) {
 	}
 
 	// Clear the board
-	game.Board = [8][8]byte{}
+	game.Board = DefaultBoard()
+	game.WhiteTurn = true
 
 	// Store game
 	id, err = i.games.Store(game)
@@ -91,21 +91,37 @@ func (i GamesInteractor) GetBoard(secret string, gameID int) ([8][8]byte, error)
 		return [8][8]byte{}, errors.New("couldnt find user by that id")
 	}
 
-	games := i.getGamesForUser(user.ID)
-	if len(games) == 0 {
+	game := i.getGameForUser(user.ID, gameID)
+
+	if game == nil {
 		return [8][8]byte{}, errors.New("couldnt find game")
 	}
+	return game.Board, nil
 
-	return games[0].Board, nil // TODO take gameID into account
 }
 
-func (i GamesInteractor) getGamesForUser(userID int) []*Game {
+func (i GamesInteractor) getGameForUser(userID int, gameID int) *Game {
 	games, err := i.games.FindByUserId(userID)
 	if err != nil {
-		return []*Game{}
+		return nil
 	}
 
-	return games
+	Debug(fmt.Sprintf("Looking for gameID %d", gameID))
+	var game *Game
+	found := false
+	for _, game = range games {
+		Debug(fmt.Sprintf("user %d has game: %+v", userID, *game))
+		if game.ID == gameID {
+			found = true
+			break
+		}
+	}
+
+	if found == true {
+		return game
+	}
+
+	return nil
 }
 
 func (i GamesInteractor) StartGameCreateDaemon() {
@@ -130,12 +146,11 @@ func (i GamesInteractor) StartGameCreateDaemon() {
 		if err != nil {
 			log.Printf("ERROR: %v\n", err)
 		}
+
 		// Use the first two requests to create a game
 		game := Game{
 			WhiteUser: matchRequests[0].UserID,
 			BlackUser: matchRequests[1].UserID,
-			Board:     defaultBoard(),
-			WhiteTurn: true,
 		}
 
 		// Randomize color
@@ -145,12 +160,12 @@ func (i GamesInteractor) StartGameCreateDaemon() {
 			game.BlackUser = temp
 		}
 
-		i.games.Store(game)
+		i.Create(&game)
 		log.Printf("INFO: Created game: %+v\n", game)
 	}
 }
 
-func defaultBoard() [8][8]byte {
+func DefaultBoard() [8][8]byte {
 	board := [8][8]byte{}
 	board[0] = [8]byte{'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'}
 	board[1] = [8]byte{'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'}
@@ -166,43 +181,40 @@ func defaultBoard() [8][8]byte {
 }
 
 // MakeMove validates a user and then performs a move
-func (i *GamesInteractor) MakeMove(secret string, gameId int, move string) error {
+func (i *GamesInteractor) MakeMove(secret string, gameID int, move string) error {
 	user, err := i.users.FindBySecret(secret)
 	if err != nil {
 		return errors.New("couldnt find user by that id")
 	}
 
-	games := i.getGamesForUser(user.ID)
-	if len(games) == 0 {
+	game := i.getGameForUser(user.ID, gameID)
+	if game == nil {
 		return errors.New("couldnt find game")
 	}
 
-	game := games[0] // TODO take gameID into account
 	if game.WhiteTurn && game.WhiteUser != user.ID ||
 		!game.WhiteTurn && game.BlackUser != user.ID {
-
-		if os.Getenv("DEBUG") == "true" {
-			fmt.Printf("Wrong turn for user %s for game: %+v\n", secret, game)
-		}
+		Debug(fmt.Sprintf("Wrong turn for user %s for game: %+v\n", secret, game))
 
 		return errors.New("not your turn")
 	}
 
-	return i.games.MakeMove(games[0], &user, move)
+	return i.games.MakeMove(game, &user, move)
 }
 
-func (i *GamesInteractor) GetMove(secret string, gameId int) (string, error) {
+func (i *GamesInteractor) GetMove(secret string, gameID int) (string, error) {
 	user, err := i.users.FindBySecret(secret)
 	if err != nil {
 		return "", errors.New("couldnt find user by that id")
 	}
 
-	games := i.getGamesForUser(user.ID)
-	if len(games) == 0 {
-		return "", errors.New("couldnt find game")
-	}
+	game := i.getGameForUser(user.ID, gameID)
 
-	game := games[0] // TODO take gameID into account
+	if game == nil {
+		msg := fmt.Sprintf("couldnt find game for secret: %s gameID: %d", secret, gameID)
+		Debug(msg)
+		return "", errors.New(msg)
+	}
 
 	return i.games.GetMove(game, &user)
 }

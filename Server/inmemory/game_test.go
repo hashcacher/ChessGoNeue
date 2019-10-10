@@ -65,7 +65,7 @@ func TestStoreOK(t *testing.T) {
 	}
 	expectID := 1
 
-	gotID, gotErr := games.Store(core.Game{BlackUser: 1, WhiteUser: 2})
+	gotID, gotErr := games.Store(&core.Game{BlackUser: 1, WhiteUser: 2})
 
 	if gotID != expectID {
 		t.Fatalf("expected output id of %v, got %v", expectID, gotID)
@@ -90,7 +90,7 @@ func TestStoreMultipleOK(t *testing.T) {
 
 	// First store
 	expectID := 1
-	gotID, gotErr := games.Store(core.Game{BlackUser: 1, WhiteUser: 2})
+	gotID, gotErr := games.Store(&core.Game{BlackUser: 1, WhiteUser: 2})
 	if gotID != expectID {
 		t.Fatalf("expected output id of %v, got %v", expectID, gotID)
 	}
@@ -99,7 +99,7 @@ func TestStoreMultipleOK(t *testing.T) {
 	}
 	// Second store
 	expectID = 2
-	gotID, gotErr = games.Store(core.Game{BlackUser: 2, WhiteUser: 3})
+	gotID, gotErr = games.Store(&core.Game{BlackUser: 2, WhiteUser: 3})
 	if gotID != expectID {
 		t.Fatalf("expected output id of %v, got %v", expectID, gotID)
 	}
