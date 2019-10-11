@@ -31,9 +31,8 @@ namespace ChessGo
 
         private MarkovNameGenerator generator;
 
-        public delegate void ConnectDelegate(bool success);
         private int failedConnections = 0;
-        private bool matching = false;
+        private UnityWebRequestAsyncOperation matchMeRequest;
 
         void Awake() {
             // Get / generate player ID
@@ -81,11 +80,16 @@ namespace ChessGo
 
             // Post to our api
             using (UnityWebRequest www = Net.GoodPost(host + "/v1/matchMe", msg))
-            {
-                matching = true;
-                yield return www.SendWebRequest();
+                {
+                matchMeRequest = www.SendWebRequest();
+                yield return matchMeRequest; 
 
                 if (www.isNetworkError) {
+                    // User hit cancel
+                    if (www.error == "Request aborted") {
+                        yield break;
+                    }
+
                     // Exponential backoff
                     Debug.LogError("MatchMe network error: " + www.error);
                     this.failedConnections++;
@@ -102,7 +106,7 @@ namespace ChessGo
                     Debug.Log("MatchMe error: " + www.downloadHandler.text);
                 } else {
                     // Found! Start game
-                    matching = false;
+                    matchMeRequest = null;
                     var response = JsonUtility.FromJson<MatchResponse>(www.downloadHandler.text);
                     if (response != null) {
                         UnitySingleton.amIWhite = response.areWhite;
@@ -166,13 +170,13 @@ namespace ChessGo
         }
 
         void Unmatchme() {
-
+            matchMeRequest.webRequest.Abort();
+            matchMeRequest = null;
         } 
 
         public void OnBackPress() {
-            if (matching) {
+            if (matchMeRequest != null) {
                 Unmatchme();
-                matching = false;
             }
             int delta = (int)menuPanels[0].localPosition.x / 800;
             SlidePanels(delta);

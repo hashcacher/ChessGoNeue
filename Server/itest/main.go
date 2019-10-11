@@ -24,11 +24,8 @@ func setup() {
 func main() {
 	setup()
 	gameID, firstPlayer := createGame("123", "456")
-	fmt.Println(1)
 	makeRandomMoves(10, firstPlayer, gameID, "123", "456")
-	fmt.Println(2)
 	board, _ := getBoard("123", gameID)
-	fmt.Println(3)
 	fmt.Println(board)
 }
 func randomMove() string {
@@ -57,9 +54,7 @@ func makeRandomMoves(nMoves int, curPlayer string, gameID int, secret1 string, s
 		// Receive Move
 		go func() {
 			defer wg.Done()
-			fmt.Println("BLAH0")
 			receivedMove, _ := getMove(receivingPlayer, gameID, move)
-			fmt.Printf("BLAH %+v\n", receivedMove)
 			if receivedMove.Move != move {
 				fmt.Printf("received move %s didnt match move %s", receivedMove, move)
 			}
@@ -70,7 +65,6 @@ func makeRandomMoves(nMoves int, curPlayer string, gameID int, secret1 string, s
 			defer wg.Done()
 			for {
 				makeMoveRes, err := makeMove(curPlayer, gameID, move)
-				fmt.Printf("%+v\n", makeMoveRes)
 				if err != nil || makeMoveRes.Success == true {
 					break
 				}

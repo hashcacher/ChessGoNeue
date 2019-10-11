@@ -1,7 +1,6 @@
 package core
 
 import (
-	"errors"
 	"reflect"
 )
 
@@ -23,6 +22,8 @@ type MatchRequests interface {
 	FindAll() ([]MatchRequest, error)
 	// Delete a MatchRequest by ID
 	Delete(id int) (deleted int, err error)
+	// Delete a MatchRequest by userID
+	DeleteByUserID(id int) (deleted int, err error)
 }
 
 // MatchRequestsInteractor is a struct that holds data to be injected for use cases
@@ -51,17 +52,22 @@ func (i *MatchRequestsInteractor) MatchMe(userID int) (game *Game, err error) {
 	if err != nil {
 		return &Game{}, err
 	}
-	if !isMatchRequestEmpty {
-		return &Game{}, errors.New("you can only queue for one game at a time")
-	}
 
 	// Create request
-	newMatchRequest := MatchRequest{UserID: userID}
-	i.matchRequests.Store(newMatchRequest)
+	if isMatchRequestEmpty {
+		newMatchRequest := MatchRequest{UserID: userID}
+		i.matchRequests.Store(newMatchRequest)
+	}
 
 	// Listen (blocking) for notify
 	game, err = i.games.ListenForStoreByUserID(userID)
 
 	// Return the gameID
 	return game, nil
+}
+
+// DeleteMatchMe will dequeue a user from matchmaking
+func (i *MatchRequestsInteractor) DeleteMatchMe(userID int) (err error) {
+	_, err = i.matchRequests.DeleteByUserID(userID)
+	return err
 }

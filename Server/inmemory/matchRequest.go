@@ -91,6 +91,33 @@ func (r *MatchRequests) Delete(id int) (deleted int, err error) {
 	return deleted, nil
 }
 
+func (r *MatchRequests) DeleteByUserID(userID int) (deleted int, err error) {
+	matchMe, _ := r.FindByUserID(userID)
+
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	_, ok := r.matchRequests[matchMe.ID]
+	deleted = 0
+	if ok {
+		deleted = 1
+	}
+	delete(r.matchRequests, matchMe.ID)
+	return deleted, nil
+}
+
 func (r *MatchRequests) ListenForStore() (core.MatchRequest, error) {
-	return <-r.allStoredEvents, nil
+	var request core.MatchRequest
+	for {
+		request = <-r.allStoredEvents
+		r.lock.RLock()
+		if _, ok := r.matchRequests[request.ID]; ok {
+			// event is still fresh
+			r.lock.RUnlock()
+			break
+		}
+		// toss this event because the request has expired and wait for another
+		r.lock.RUnlock()
+	}
+	return request, nil
 }

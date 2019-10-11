@@ -105,15 +105,14 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
-		closeNotify := w.(http.CloseNotifier).CloseNotify()
-		go func(secret string) {
-			<-closeNotify
-			// Cleanup
-			service.matchRequestsInteractor.Delete(secret)
-			// Need to close the connection and cleanup the rest of the objects
-		}(matchMeReq.secret)
-	*/
+	// If user disconnects, dequeue
+	closeNotify := w.(http.CloseNotifier).CloseNotify()
+	go func(secret string) {
+		<-closeNotify
+		service.matchRequestsInteractor.DeleteMatchMe(user.ID)
+		core.Debug(fmt.Sprintf("closeConnection: user %d", user.ID))
+		// TODO: Need to close the connection and cleanup the rest of the objects
+	}(request.Secret)
 
 	core.Debug(fmt.Sprintf("Matchme request for user %d", user.ID))
 
