@@ -70,21 +70,22 @@ func (g *Games) Store(game *core.Game) (int, error) {
 	}
 	notifyChannel <- game
 
+	// Create move channels
+	whiteMoveChannel := make(chan string, 2)
+	blackMoveChannel := make(chan string, 2)
+	g.moveLock.Lock()
+	g.moveEventsByUserID[game.WhiteUser] = whiteMoveChannel
+	g.moveEventsByUserID[game.BlackUser] = blackMoveChannel
+	g.moveLock.Unlock()
+
 	return game.ID, nil
 }
 
 func (g *Games) ListenForMoveByUserID(userID int) (move string, err error) {
 	g.moveLock.RLock()
-	notifyChannel, ok := g.moveEventsByUserID[userID]
+	notifyChannel, _ := g.moveEventsByUserID[userID]
 	g.moveLock.RUnlock()
 
-	// If the channel doesn't exist, create it
-	if !ok {
-		notifyChannel = make(chan string, 2)
-		g.moveLock.Lock()
-		g.moveEventsByUserID[userID] = notifyChannel
-		g.moveLock.Unlock()
-	}
 	return <-notifyChannel, nil
 }
 
@@ -147,7 +148,7 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 			return errors.New("Nothing at " + squares[0])
 		}
 
-		core.Debug(fmt.Sprintf("--Game %d user %d: %d,%d -> %d,%d\n", game.ID, user.ID, fromX, fromY, toX, toY))
+		core.Debug(fmt.Sprintf("  Game %d user %d: %d,%d -> %d,%d\n", game.ID, user.ID, fromX, fromY, toX, toY))
 
 		game.Board[toX][toY] = game.Board[fromX][fromY]
 		game.Board[fromX][fromY] = ' '
@@ -178,6 +179,8 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 	g.games[game.ID] = *game
 	g.gamesLock.Unlock()
 
+	core.Debug(fmt.Sprintf("    Updated game %d board", game.ID))
+
 	// Get out opponent's player ID
 	var oppID int
 	if user.ID == game.BlackUser {
@@ -187,9 +190,14 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 	}
 
 	// Send move to other player
+	core.Debug(fmt.Sprintf("    Sending game %d move events to user %d", game.ID, oppID))
 	g.moveLock.RLock()
-	g.moveEventsByUserID[oppID] <- move
+	moveChan := g.moveEventsByUserID[oppID]
 	g.moveLock.RUnlock()
+
+	moveChan <- move
+
+	core.Debug(fmt.Sprintf("    Sent game %d move events", game.ID))
 
 	return nil
 }
