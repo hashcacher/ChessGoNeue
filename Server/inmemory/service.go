@@ -22,7 +22,7 @@ type WebService struct {
 // and manipulate data
 func NewWebService() WebService {
 	// Create some context for inmemory data stores
-	gamesMap := make(map[int]core.Game)
+	gamesMap := make(map[int]*core.Game)
 	matchRequestsMap := map[int]core.MatchRequest{}
 
 	// Create in memory data stores

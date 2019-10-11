@@ -27,7 +27,7 @@ type Games interface {
 	ListenForMoveByUserID(userID int) (string, error)
 	FindById(id int) (Game, error)
 	FindByUserId(id int) ([]*Game, error)
-	Update(Game) error
+	Update(*Game) error
 }
 
 // GamesInteractor is a struct that holds data to be injected for use cases
@@ -106,11 +106,10 @@ func (i GamesInteractor) getGameForUser(userID int, gameID int) *Game {
 		return nil
 	}
 
-	Debug(fmt.Sprintf("--Looking for gameID %d", gameID))
+	Debug(fmt.Sprintf("  Looking for gameID %d", gameID))
 	var game *Game
 	found := false
 	for _, game = range games {
-		Debug(fmt.Sprintf("----user %d has game: %+v", userID, *game))
 		if game.ID == gameID {
 			found = true
 			break

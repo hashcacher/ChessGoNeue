@@ -10,7 +10,7 @@ import (
 
 type Games struct {
 	autoIncrement int
-	games         map[int]core.Game
+	games         map[int]*core.Game
 	// Map from userID to notification channel
 	storedEventsByUserID map[int]chan *core.Game
 
@@ -23,7 +23,7 @@ type Games struct {
 	storedLock sync.RWMutex
 }
 
-func NewGames(games map[int]core.Game) Games {
+func NewGames(games map[int]*core.Game) Games {
 	return Games{
 		games:                games,
 		storedEventsByUserID: make(map[int]chan *core.Game),
@@ -43,7 +43,7 @@ func (g *Games) Store(game *core.Game) (int, error) {
 	game.ID = g.getNextAutoincrementID()
 
 	g.gamesLock.Lock()
-	g.games[game.ID] = *game
+	g.games[game.ID] = game
 	g.gamesLock.Unlock()
 
 	// Notify for white user
@@ -107,7 +107,7 @@ func (g *Games) ListenForStoreByUserID(userID int) (game *core.Game, err error) 
 func (g *Games) FindById(id int) (core.Game, error) {
 	g.gamesLock.RLock()
 	defer g.gamesLock.RUnlock()
-	return g.games[id], nil
+	return *g.games[id], nil
 }
 
 func (g *Games) FindByUserId(userID int) ([]*core.Game, error) {
@@ -117,14 +117,14 @@ func (g *Games) FindByUserId(userID int) ([]*core.Game, error) {
 	games := []*core.Game{}
 	for _, game := range g.games {
 		if game.BlackUser == userID || game.WhiteUser == userID {
-			games = append(games, &game)
+			games = append(games, game)
 		}
 	}
 
 	return games, nil
 }
 
-func (g *Games) Update(game core.Game) error {
+func (g *Games) Update(game *core.Game) error {
 	g.gamesLock.Lock()
 	defer g.gamesLock.Unlock()
 
@@ -176,7 +176,7 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 
 	// Actually override the game in the map
 	g.gamesLock.Lock()
-	g.games[game.ID] = *game
+	g.games[game.ID] = game
 	g.gamesLock.Unlock()
 
 	core.Debug(fmt.Sprintf("    Updated game %d board", game.ID))
