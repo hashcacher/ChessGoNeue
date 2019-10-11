@@ -23,7 +23,6 @@ func setup() {
 
 func main() {
 	setup()
-	fmt.Println(0)
 	gameID, firstPlayer := createGame("123", "456")
 	fmt.Println(1)
 	makeRandomMoves(10, firstPlayer, gameID, "123", "456")
@@ -156,7 +155,10 @@ func createGame(secret1 string, secret2 string) (int, string) {
 	var response1, response2 inmemory.MatchMeResponse
 	go func() {
 		defer wg.Done()
-		res, _ := http.Post(HOST+"/v1/matchMe", "application/json", bytes.NewBuffer(request1))
+		res, err := http.Post(HOST+"/v1/matchMe", "application/json", bytes.NewBuffer(request1))
+		if err != nil {
+			panic(err)
+		}
 		bodyBytes, _ := ioutil.ReadAll(res.Body)
 		json.Unmarshal(bodyBytes, &response1)
 	}()
@@ -170,10 +172,7 @@ func createGame(secret1 string, secret2 string) (int, string) {
 		json.Unmarshal(bodyBytes, &response2)
 	}()
 
-	fmt.Printf("waiting...")
 	wg.Wait()
-	fmt.Printf("res 1: %+v", response1)
-	fmt.Printf("res 2: %+v", response2)
 
 	var firstPlayer string
 	if response1.AreWhite {

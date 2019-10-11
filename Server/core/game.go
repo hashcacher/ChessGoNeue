@@ -106,11 +106,11 @@ func (i GamesInteractor) getGameForUser(userID int, gameID int) *Game {
 		return nil
 	}
 
-	Debug(fmt.Sprintf("Looking for gameID %d", gameID))
+	Debug(fmt.Sprintf("--Looking for gameID %d", gameID))
 	var game *Game
 	found := false
 	for _, game = range games {
-		Debug(fmt.Sprintf("user %d has game: %+v", userID, *game))
+		Debug(fmt.Sprintf("----user %d has game: %+v", userID, *game))
 		if game.ID == gameID {
 			found = true
 			break
@@ -184,19 +184,19 @@ func DefaultBoard() [8][8]byte {
 func (i *GamesInteractor) MakeMove(secret string, gameID int, move string) error {
 	user, err := i.users.FindBySecret(secret)
 	if err != nil {
-		return errors.New("couldnt find user by that id")
+		return errors.New("--couldnt find user by that id")
 	}
 
 	game := i.getGameForUser(user.ID, gameID)
 	if game == nil {
-		return errors.New("couldnt find game")
+		return errors.New("--couldnt find game")
 	}
 
 	if game.WhiteTurn && game.WhiteUser != user.ID ||
 		!game.WhiteTurn && game.BlackUser != user.ID {
-		Debug(fmt.Sprintf("Wrong turn for user %s for game: %+v\n", secret, game))
+		Debug(fmt.Sprintf("--Wrong turn for user %s for game: %+v\n", secret, game))
 
-		return errors.New("not your turn")
+		return errors.New("--not your turn")
 	}
 
 	return i.games.MakeMove(game, &user, move)
@@ -205,13 +205,13 @@ func (i *GamesInteractor) MakeMove(secret string, gameID int, move string) error
 func (i *GamesInteractor) GetMove(secret string, gameID int) (string, error) {
 	user, err := i.users.FindBySecret(secret)
 	if err != nil {
-		return "", errors.New("couldnt find user by that id")
+		return "", errors.New("--couldnt find user by that id")
 	}
 
 	game := i.getGameForUser(user.ID, gameID)
 
 	if game == nil {
-		msg := fmt.Sprintf("couldnt find game for secret: %s gameID: %d", secret, gameID)
+		msg := fmt.Sprintf("--couldnt find game for secret: %s gameID: %d", secret, gameID)
 		Debug(msg)
 		return "", errors.New(msg)
 	}

@@ -79,8 +79,8 @@ func (r *MatchRequests) FindAll() ([]core.MatchRequest, error) {
 }
 
 func (r *MatchRequests) Delete(id int) (deleted int, err error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 
 	_, ok := r.matchRequests[id]
 	deleted = 0

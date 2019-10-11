@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 	"strings"
+	"sync"
 )
 
 type Games struct {
@@ -15,6 +16,11 @@ type Games struct {
 
 	// Map from userID to move channel
 	moveEventsByUserID map[int]chan string
+
+	// We're dealing with real threads here
+	gamesLock  sync.RWMutex
+	moveLock   sync.RWMutex
+	storedLock sync.RWMutex
 }
 
 func NewGames(games map[int]core.Game) Games {
@@ -22,6 +28,9 @@ func NewGames(games map[int]core.Game) Games {
 		games:                games,
 		storedEventsByUserID: make(map[int]chan *core.Game),
 		moveEventsByUserID:   make(map[int]chan string),
+		storedLock:           sync.RWMutex{},
+		moveLock:             sync.RWMutex{},
+		gamesLock:            sync.RWMutex{},
 	}
 }
 
@@ -32,21 +41,32 @@ func (g *Games) getNextAutoincrementID() int {
 
 func (g *Games) Store(game *core.Game) (int, error) {
 	game.ID = g.getNextAutoincrementID()
+
+	g.gamesLock.Lock()
 	g.games[game.ID] = *game
+	g.gamesLock.Unlock()
 
 	// Notify for white user
+	g.storedLock.RLock()
 	notifyChannel, ok := g.storedEventsByUserID[game.WhiteUser]
+	g.storedLock.RUnlock()
 	if !ok {
 		notifyChannel = make(chan *core.Game, 2)
+		g.storedLock.Lock()
 		g.storedEventsByUserID[game.WhiteUser] = notifyChannel
+		g.storedLock.Unlock()
 	}
 	notifyChannel <- game
 
 	// Notify for black user
+	g.storedLock.RLock()
 	notifyChannel, ok = g.storedEventsByUserID[game.BlackUser]
+	g.storedLock.RUnlock()
 	if !ok {
 		notifyChannel = make(chan *core.Game, 2)
+		g.storedLock.Lock()
 		g.storedEventsByUserID[game.BlackUser] = notifyChannel
+		g.storedLock.Unlock()
 	}
 	notifyChannel <- game
 
@@ -54,30 +74,45 @@ func (g *Games) Store(game *core.Game) (int, error) {
 }
 
 func (g *Games) ListenForMoveByUserID(userID int) (move string, err error) {
+	g.moveLock.RLock()
 	notifyChannel, ok := g.moveEventsByUserID[userID]
+	g.moveLock.RUnlock()
+
 	// If the channel doesn't exist, create it
 	if !ok {
 		notifyChannel = make(chan string, 2)
+		g.moveLock.Lock()
 		g.moveEventsByUserID[userID] = notifyChannel
+		g.moveLock.Unlock()
 	}
 	return <-notifyChannel, nil
 }
 
 func (g *Games) ListenForStoreByUserID(userID int) (game *core.Game, err error) {
+	g.storedLock.RLock()
 	notifyChannel, ok := g.storedEventsByUserID[userID]
+	g.storedLock.RUnlock()
+
 	// If the channel doesn't exist, create it
 	if !ok {
 		notifyChannel = make(chan *core.Game, 2)
+		g.storedLock.Lock()
 		g.storedEventsByUserID[userID] = notifyChannel
+		g.storedLock.Unlock()
 	}
 	return <-notifyChannel, nil
 }
 
 func (g *Games) FindById(id int) (core.Game, error) {
+	g.gamesLock.RLock()
+	defer g.gamesLock.RUnlock()
 	return g.games[id], nil
 }
 
 func (g *Games) FindByUserId(userID int) ([]*core.Game, error) {
+	g.gamesLock.RLock()
+	defer g.gamesLock.RUnlock()
+
 	games := []*core.Game{}
 	for _, game := range g.games {
 		if game.BlackUser == userID || game.WhiteUser == userID {
@@ -89,6 +124,9 @@ func (g *Games) FindByUserId(userID int) ([]*core.Game, error) {
 }
 
 func (g *Games) Update(game core.Game) error {
+	g.gamesLock.Lock()
+	defer g.gamesLock.Unlock()
+
 	g.games[game.ID] = game
 	return nil
 }
@@ -109,7 +147,7 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 			return errors.New("Nothing at " + squares[0])
 		}
 
-		core.Debug(fmt.Sprintf("Game %d user %d: %d,%d -> %d,%d\n", game.ID, user.ID, fromX, fromY, toX, toY))
+		core.Debug(fmt.Sprintf("--Game %d user %d: %d,%d -> %d,%d\n", game.ID, user.ID, fromX, fromY, toX, toY))
 
 		game.Board[toX][toY] = game.Board[fromX][fromY]
 		game.Board[fromX][fromY] = ' '
@@ -136,7 +174,9 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 	game.WhiteTurn = !game.WhiteTurn
 
 	// Actually override the game in the map
+	g.gamesLock.Lock()
 	g.games[game.ID] = *game
+	g.gamesLock.Unlock()
 
 	// Get out opponent's player ID
 	var oppID int
@@ -147,7 +187,9 @@ func (g *Games) MakeMove(game *core.Game, user *core.User, move string) error {
 	}
 
 	// Send move to other player
+	g.moveLock.RLock()
 	g.moveEventsByUserID[oppID] <- move
+	g.moveLock.RUnlock()
 
 	return nil
 }
@@ -177,5 +219,7 @@ func charToInt(char byte) int {
 }
 
 func (g *Games) GetBoard(game *core.Game) [8][8]byte {
+	g.gamesLock.RLock()
+	defer g.gamesLock.RUnlock()
 	return g.games[game.ID].Board
 }
