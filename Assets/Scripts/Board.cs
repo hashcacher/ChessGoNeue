@@ -51,6 +51,7 @@ namespace ChessGo
         public Button TopDownToggleButton;
         public Text myTurnText;
         public Text playerNamesText;
+        public Text oppNameText;
         public GameObject winScreen;
 
         // State
@@ -134,7 +135,8 @@ namespace ChessGo
             pieces2D = new GameObject[nRows, nRows];
             highlights = new GameObject[nRows, nRows];
 
-            IAmBlack = !UnitySingleton.amIWhite;
+
+            IAmBlack = usingServer ? !UnitySingleton.match.areWhite : true;
 
             Setup2D(); //shoots rays at the 2D pieces to get references.
             SetupPieces(pieces); //places the initial chess pieces
@@ -145,10 +147,10 @@ namespace ChessGo
         void Start()
         {
             // Send a start game message to the server
-            if (usingServer)
-            {
+            if (usingServer) {
                 StartCoroutine("ReceiveMoves");
-                playerNamesText.text = Client.username + " vs ";
+                playerNamesText.text = UnitySingleton.name;
+                oppNameText.text = UnitySingleton.match.oppName;
 
                 if (IAmBlack) {
                     curHotspot = 6;
@@ -192,7 +194,7 @@ namespace ChessGo
             while (true) {
                 var request = new MoveRequest();
                 request.secret = UnitySingleton.secret;
-                request.gameID = UnitySingleton.gameID;
+                request.gameID = UnitySingleton.match.gameID;
                 var msg = JsonUtility.ToJson(request);
                 var host = Net.GetServerHost(); // Post to our api
                 using (UnityWebRequest www = Net.GoodPost(host + "/v1/getMove", msg))
@@ -663,7 +665,7 @@ namespace ChessGo
 
             var request = new MakeMoveRequest();
             request.secret = UnitySingleton.secret;
-            request.gameID = UnitySingleton.gameID;
+            request.gameID = UnitySingleton.match.gameID;
             request.move = p1.ToString();
             if (p2 != null) {
                 request.move += ">" + p2.ToString();

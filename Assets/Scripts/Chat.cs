@@ -32,7 +32,7 @@ namespace ChessGo {
             while (true) {
                 var request = new MoveRequest(); // Same as the moveRequest, but different endpoint
                 request.secret = UnitySingleton.secret;
-                request.gameID = UnitySingleton.gameID;
+                request.gameID = UnitySingleton.match.gameID;
                 var msg = JsonUtility.ToJson(request);
                 var host = Net.GetServerHost(); // Post to our api
                 using (UnityWebRequest www = Net.GoodPost(host + "/v1/getChat", msg))

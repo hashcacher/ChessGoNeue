@@ -86,7 +86,7 @@ func (i *GamesInteractor) Create(game *Game) (id int, err error) {
 }
 
 func (i GamesInteractor) GetBoard(secret string, gameID int) ([8][8]byte, error) {
-	user, err := i.users.FindBySecret(secret)
+	user, err := i.users.FindBySecret(secret, "")
 	if err != nil {
 		return [8][8]byte{}, errors.New("couldnt find user by that id")
 	}
@@ -181,7 +181,7 @@ func DefaultBoard() [8][8]byte {
 
 // MakeMove validates a user and then performs a move
 func (i *GamesInteractor) MakeMove(secret string, gameID int, move string) error {
-	user, err := i.users.FindBySecret(secret)
+	user, err := i.users.FindBySecret(secret, "")
 	if err != nil {
 		return errors.New("--couldnt find user by that id")
 	}
@@ -202,7 +202,7 @@ func (i *GamesInteractor) MakeMove(secret string, gameID int, move string) error
 }
 
 func (i *GamesInteractor) GetMove(secret string, gameID int) (string, error) {
-	user, err := i.users.FindBySecret(secret)
+	user, err := i.users.FindBySecret(secret, "")
 	if err != nil {
 		return "", errors.New("--couldnt find user by that id")
 	}

@@ -44,6 +44,7 @@ func NewWebService() WebService {
 // MatchMeRequest is the format of the request sent to this endpoint
 type MatchMeRequest struct {
 	Secret string `json:"secret"`
+	Name   string `json:"username"`
 }
 
 // MatchMeRequest is the format of the request sent to this endpoint
@@ -57,6 +58,7 @@ type MatchMeResponse struct {
 	Err      string `json:"err"`
 	GameID   int    `json:"gameID"`
 	AreWhite bool   `json:"areWhite"`
+	OppName  string `json:"oppName"`
 }
 
 // MoveRequest is the format of the request sent for GetMove/MakeMove
@@ -89,9 +91,10 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		w.Write(errorResponse(err))
 		return
 	}
+	core.Debug(fmt.Sprintf("Matchme request %+v", request))
 
 	// Authenticate user
-	user, err := service.usersInteractor.FindBySecret(request.Secret)
+	user, err := service.usersInteractor.FindBySecret(request.Secret, request.Name)
 	if err != nil {
 		w.WriteHeader(500)
 		w.Write(errorResponse(err))
@@ -111,7 +114,6 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		<-closeNotify
 		service.matchRequestsInteractor.DeleteMatchMe(user.ID)
 		core.Debug(fmt.Sprintf("closeConnection: user %d", user.ID))
-		// TODO: Need to close the connection and cleanup the rest of the objects
 	}(request.Secret)
 
 	core.Debug(fmt.Sprintf("Matchme request for user %d", user.ID))
@@ -125,11 +127,21 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// What's our opponemts name
+	oppID := game.BlackUser
+	if oppID == user.ID {
+		oppID = game.WhiteUser
+	}
+	opp, _ := service.usersInteractor.FindByID(oppID)
+	oppName := opp.Name
+	core.Debug(fmt.Sprintf("Opponent name: %s", oppName))
+
 	// Respond
 	resp := MatchMeResponse{
 		Err:      "",
 		GameID:   game.ID,
 		AreWhite: game.WhiteUser == user.ID,
+		OppName:  oppName,
 	}
 	json, _ := json.Marshal(resp)
 	w.Write(json)

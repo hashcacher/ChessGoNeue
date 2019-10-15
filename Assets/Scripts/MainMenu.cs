@@ -35,12 +35,28 @@ namespace ChessGo
         private UnityWebRequestAsyncOperation matchMeRequest;
 
         void Awake() {
+            toggleGroup = GameObject.FindObjectOfType<ToggleGroup>();
+            nickname = GameObject.Find("Nickname Input").GetComponent<InputField>();
+            playOnline = GameObject.Find("Online").GetComponent<Button>();
+            errorMessage = GameObject.Find("Error Text").GetComponent<Text>();
+
+            countdown = GameObject.Find("Countdown").GetComponent<Text>();
+            searching = GameObject.Find("Searching Header").GetComponent<Text>();
+
             // Get / generate player ID
-            if (PlayerPrefs.HasKey("ID")) {
-                UnitySingleton.secret = PlayerPrefs.GetString("ID");
+            if (PlayerPrefs.HasKey("secret")) {
+                UnitySingleton.secret = PlayerPrefs.GetString("secret");
             } else {
                 UnitySingleton.secret = RandomString(20);
-                PlayerPrefs.SetString("ID", UnitySingleton.secret);
+                PlayerPrefs.SetString("secret", UnitySingleton.secret);
+            }
+
+            // Get / generate player Name
+            if (PlayerPrefs.HasKey("name")) {
+                UnitySingleton.name = PlayerPrefs.GetString("name");
+                nickname.text = UnitySingleton.name;
+            } else {
+                OnGeneratePress();
             }
 
             canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
@@ -49,17 +65,11 @@ namespace ChessGo
             for (int i = 0; i < canvas.transform.childCount; i++) {
                 var child = canvas.transform.GetChild(i).GetComponent<RectTransform>();
                 if (child) {
-                    menuPanels[count++] = child; 
+                    menuPanels[count++] = child;
                 }
             }
 
-            toggleGroup = GameObject.FindObjectOfType<ToggleGroup>();
-            nickname = GameObject.Find("Nickname Input").GetComponent<InputField>();
-            playOnline = GameObject.Find("Online").GetComponent<Button>();
-            errorMessage = GameObject.Find("Error Text").GetComponent<Text>();
-
-            countdown = GameObject.Find("Countdown").GetComponent<Text>();
-            searching = GameObject.Find("Searching Header").GetComponent<Text>();
+            nickname.text = UnitySingleton.name;
         }
 
         void Start() {
@@ -75,6 +85,7 @@ namespace ChessGo
         IEnumerator MatchMe() {
             var request = new MatchRequest();
             request.secret = UnitySingleton.secret;
+            request.username = UnitySingleton.name;
             var msg = JsonUtility.ToJson(request);
             var host = Net.GetServerHost();
 
@@ -109,8 +120,7 @@ namespace ChessGo
                     matchMeRequest = null;
                     var response = JsonUtility.FromJson<MatchResponse>(www.downloadHandler.text);
                     if (response != null) {
-                        UnitySingleton.amIWhite = response.areWhite;
-                        UnitySingleton.gameID = response.gameID;
+                        UnitySingleton.match = response;
                         StartCoroutine(Countdown());
                     } else {
                         Debug.Log("Couldnt parse server response: " + www.downloadHandler.text);
@@ -197,14 +207,17 @@ namespace ChessGo
 
         public void OnGeneratePress()
         {
-            GenerateName();
+            var name = GenerateName();
+            nickname.text = name;
+            UnitySingleton.name = name;
+            PlayerPrefs.SetString("name", UnitySingleton.name);
         }
 
-        private void GenerateName()
+        private string GenerateName()
         {
             if (generator == null)
                 generator = new MarkovNameGenerator();
-            nickname.text = generator.NextName;
+            return generator.NextName;
         }
     }
 }

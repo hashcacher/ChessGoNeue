@@ -11,9 +11,9 @@ namespace ChessGo
         {
             get { return instance; }
         }
-        public static bool amIWhite;
         public static string secret;
-        public static int gameID;
+        public static string name;
+        public static MatchResponse match;
         public static bool hotseat = true;
         void Awake()
         {

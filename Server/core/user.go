@@ -4,15 +4,15 @@ import "errors"
 
 // User stores user profile data
 type User struct {
-	ID       int    `json:"id"`
-	Secret   string `json:"Secret"`
-	Username string `json:"username"`
+	ID     int    `json:"id"`
+	Secret string `json:"Secret"`
+	Name   string `json:"username"`
 }
 
 // Users is the use case for User entitiy
 type Users interface {
 	Store(User) (id int, err error)
-	FindBySecret(secret string) (User, error)
+	FindBySecret(secret string, name string) (User, error)
 	FindByID(id int) (User, error)
 	Update(User) error
 }
@@ -31,7 +31,7 @@ func NewUsersInteractor(users Users) UsersInteractor {
 
 // Create creates a new user
 func (i *UsersInteractor) Create(user User) (int, error) {
-	if len(user.Username) == 0 {
+	if len(user.Name) == 0 {
 		return 0, errors.New("username can't be empty")
 	}
 	id, err := i.users.Store(user)
@@ -42,8 +42,8 @@ func (i *UsersInteractor) Create(user User) (int, error) {
 }
 
 // FindBySecret fetches the user from the repository and returns it
-func (i *UsersInteractor) FindBySecret(secret string) (User, error) {
-	user, err := i.users.FindBySecret(secret)
+func (i *UsersInteractor) FindBySecret(secret string, name string) (User, error) {
+	user, err := i.users.FindBySecret(secret, name)
 	if err != nil {
 		return User{}, err
 	}

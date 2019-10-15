@@ -45,7 +45,7 @@ func (r *Users) FindByID(id int) (core.User, error) {
 	return r.idUserMap[id], nil
 }
 
-func (r *Users) FindBySecret(secret string) (core.User, error) {
+func (r *Users) FindBySecret(secret string, name string) (core.User, error) {
 	if secret == "" {
 		return core.User{}, errors.New("secret cannot be empty string")
 	}
@@ -55,7 +55,7 @@ func (r *Users) FindBySecret(secret string) (core.User, error) {
 	r.lock.RUnlock()
 	// Create a new user if one doesn't exist with that secret
 	if !ok {
-		user = core.User{Secret: secret}
+		user = core.User{Secret: secret, Name: name}
 		id, err := r.Store(user)
 		if err != nil {
 			return core.User{}, nil
