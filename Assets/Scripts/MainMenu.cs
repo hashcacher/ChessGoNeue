@@ -60,14 +60,6 @@ namespace ChessGo
             }
 
             canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
-            menuPanels = new RectTransform[3];
-            int count = 0;
-            for (int i = 0; i < canvas.transform.childCount; i++) {
-                var child = canvas.transform.GetChild(i).GetComponent<RectTransform>();
-                if (child) {
-                    menuPanels[count++] = child;
-                }
-            }
 
             nickname.text = UnitySingleton.name;
         }
@@ -82,10 +74,11 @@ namespace ChessGo
               .Select(s => s[Random.Range(0, s.Length)]).ToArray());
         }
 
-        IEnumerator MatchMe() {
+        IEnumerator MatchMe(int duration) {
             var request = new MatchRequest();
             request.secret = UnitySingleton.secret;
             request.username = UnitySingleton.name;
+            request.duration = duration;
             var msg = JsonUtility.ToJson(request);
             var host = Net.GetServerHost();
 
@@ -93,7 +86,7 @@ namespace ChessGo
             using (UnityWebRequest www = Net.GoodPost(host + "/v1/matchMe", msg))
                 {
                 matchMeRequest = www.SendWebRequest();
-                yield return matchMeRequest; 
+                yield return matchMeRequest;
 
                 if (www.isNetworkError) {
                     // User hit cancel
@@ -110,7 +103,7 @@ namespace ChessGo
                         errorMessage.text = "Server is experiencing technical difficulties. Please try again later.";
                         OnBackPress();
                     } else {
-                        StartCoroutine(MatchMe());
+                        StartCoroutine(MatchMe(duration));
                     }
                 } else if (www.isHttpError) {
                     OnBackPress();
@@ -169,14 +162,18 @@ namespace ChessGo
         public void OnOnlinePress()
         {
             SlidePanels(1);
+        }
+
+        public void OnDurationPress(int duration) {
             this.failedConnections = 0;
-            StartCoroutine(MatchMe());
+            StartCoroutine(MatchMe(duration));
             StartCoroutine("Dots");
+            SlidePanels(1);
         }
 
         public void OnRulesPress()
         {
-            SlidePanels(2);
+            SlidePanels(3);
         }
 
         void Unmatchme() {

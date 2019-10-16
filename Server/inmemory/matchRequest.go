@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"fmt"
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 	"sync"
 )
@@ -11,8 +12,8 @@ const (
 
 type MatchRequests struct {
 	autoIncrement int
-	// map from matchRequest ID to matchRequest
-	matchRequests map[int]core.MatchRequest
+	// map from game duration to matchRequest
+	matchRequests map[int][]core.MatchRequest
 	// Map from userID to notification channel
 	allStoredEvents chan core.MatchRequest
 
@@ -24,9 +25,9 @@ func (r *MatchRequests) getNextAutoincrementID() int {
 	return r.autoIncrement
 }
 
-func NewMatchRequests(matchRequests map[int]core.MatchRequest) MatchRequests {
+func NewMatchRequests() MatchRequests {
 	return MatchRequests{
-		matchRequests:   matchRequests,
+		matchRequests:   map[int][]core.MatchRequest{},
 		allStoredEvents: make(chan core.MatchRequest, allStoredEventsBufferSize),
 		lock:            sync.RWMutex{},
 	}
@@ -37,18 +38,9 @@ func (r *MatchRequests) Store(matchRequest core.MatchRequest) error {
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	r.matchRequests[matchRequest.ID] = matchRequest
+	queue := r.matchRequests[matchRequest.Duration]
+	r.matchRequests[matchRequest.Duration] = append(queue, matchRequest)
 	r.allStoredEvents <- matchRequest
-
-	return nil
-}
-
-func (r *MatchRequests) AttemptMatch(matchRequest core.MatchRequest) error {
-	matchRequest.ID = r.getNextAutoincrementID()
-
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.matchRequests[matchRequest.ID] = matchRequest
 
 	return nil
 }
@@ -58,52 +50,57 @@ func (r *MatchRequests) FindByUserID(userID int) (core.MatchRequest, error) {
 	defer r.lock.RUnlock()
 
 	// Find first request and return it
-	for _, matchRequest := range r.matchRequests {
-		if matchRequest.UserID == userID {
-			return matchRequest, nil
+	for _, queue := range r.matchRequests {
+		for _, matchRequest := range queue {
+			if matchRequest.UserID == userID {
+				return matchRequest, nil
+			}
 		}
 	}
 	// If the map of match requests is empty, just return empty
 	return core.MatchRequest{}, nil
 }
 
-func (r *MatchRequests) FindAll() ([]core.MatchRequest, error) {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	matchRequests := []core.MatchRequest{}
-	for _, matchRequest := range r.matchRequests {
-		matchRequests = append(matchRequests, matchRequest)
+func (r *MatchRequests) find(ID int) (int, int) {
+	for duration, queue := range r.matchRequests {
+		for i, matchRequest := range queue {
+			if matchRequest.ID == ID {
+				return duration, i
+			}
+		}
 	}
-	return matchRequests, nil
+
+	return -1, -1
+}
+
+func (r *MatchRequests) FindAll() (map[int][]core.MatchRequest, error) {
+	return r.matchRequests, nil
 }
 
 func (r *MatchRequests) Delete(id int) (deleted int, err error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	_, ok := r.matchRequests[id]
-	deleted = 0
-	if ok {
-		deleted = 1
+	duration, idx := r.find(id)
+	if idx != -1 {
+		r.matchRequests[duration] = remove(r.matchRequests[duration], idx)
+		return 1, nil
 	}
-	delete(r.matchRequests, id)
-	return deleted, nil
+
+	return 0, nil
+}
+
+func remove(s []core.MatchRequest, i int) []core.MatchRequest {
+	core.Debug(fmt.Sprintf("Removing request %+v\n", s[i]))
+
+	s[i] = s[len(s)-1]
+	// We do not need to put s[i] at the end, as it will be discarded anyway
+	return s[:len(s)-1]
 }
 
 func (r *MatchRequests) DeleteByUserID(userID int) (deleted int, err error) {
 	matchMe, _ := r.FindByUserID(userID)
-
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	_, ok := r.matchRequests[matchMe.ID]
-	deleted = 0
-	if ok {
-		deleted = 1
-	}
-	delete(r.matchRequests, matchMe.ID)
-	return deleted, nil
+	return r.Delete(matchMe.ID)
 }
 
 func (r *MatchRequests) ListenForStore() (core.MatchRequest, error) {
@@ -111,7 +108,7 @@ func (r *MatchRequests) ListenForStore() (core.MatchRequest, error) {
 	for {
 		request = <-r.allStoredEvents
 		r.lock.RLock()
-		if _, ok := r.matchRequests[request.ID]; ok {
+		if duration, _ := r.find(request.ID); duration != -1 {
 			// event is still fresh
 			r.lock.RUnlock()
 			break

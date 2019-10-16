@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
 namespace ChessGo
 {
@@ -14,7 +15,9 @@ namespace ChessGo
         public static string secret;
         public static string name;
         public static MatchResponse match;
+        public static MoveResponse lastMove;
         public static bool hotseat = true;
+
         void Awake()
         {
             if (instance != null && instance != this)

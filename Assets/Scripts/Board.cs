@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Events;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
@@ -105,6 +107,9 @@ namespace ChessGo
 
         private short failedReceives, failedSends = 0;
 
+        public UnityEvent turnStarted;
+        public UnityEvent turnEnded;
+
         void Awake() {
             //Find objects
             canvas = Camera.main.transform.Find("Canvas").transform;
@@ -144,8 +149,7 @@ namespace ChessGo
 
 
         // Use this for initialization
-        void Start()
-        {
+        void Start() {
             // Send a start game message to the server
             if (usingServer) {
                 StartCoroutine("ReceiveMoves");
@@ -205,7 +209,7 @@ namespace ChessGo
                         // Exponential backoff
                         Debug.LogError("ReceiveMoves network error: " + www.error);
                         this.failedReceives++;
-                        yield return new WaitForSeconds(Mathf.Pow(2f, this.failedReceives) / 10f * Random.Range(.5f, 1.0f));
+                        yield return new WaitForSeconds(Mathf.Pow(2f, this.failedReceives) / 10f * UnityEngine.Random.Range(.5f, 1.0f));
 
                         if (this.failedReceives <= 10) {
                             // TODO spinning beachball?
@@ -222,7 +226,12 @@ namespace ChessGo
                         if (response != null) {
                             if (response.move != "") {
                                 // Move received!
+                                UnitySingleton.lastMove = response;
                                 MakeReceivedMove(response.move);
+                                Debug.Log("received move " + www.downloadHandler.text);
+
+                                //DateTime.TryParse(response.turnStarted, out UnitySingleton.turnStarted );
+                                turnStarted.Invoke();
                             }
                         }
                     }
@@ -681,7 +690,9 @@ namespace ChessGo
                         // Exponential backoff
                         Debug.LogError("SendMove network error: " + www.error);
                         this.failedSends++;
-                        yield return new WaitForSeconds(Mathf.Pow(2f, this.failedSends) / 10f * Random.Range(.5f, 1.0f));
+                        yield return new WaitForSeconds(
+                                Mathf.Pow(2f, this.failedSends) /
+                                10f * UnityEngine.Random.Range(.5f, 1.0f));
 
                         if (this.failedSends >= 10) {
                             // TODO spinning beachball?
@@ -824,6 +835,11 @@ namespace ChessGo
                     break;
                 z++;
             }
+
+            if (x < 0 || x > 7 || z < 0 || z > 7) {
+                return new Point(-1, -1);
+            }
+
             return new Point(x, z);
         }
 
@@ -941,6 +957,7 @@ namespace ChessGo
             myTurnText.enabled = false;
             myTurn = false;
             FlipTurnButtonColor();
+            turnEnded.Invoke();
         }
 
         private void FlipTurnButtonColor()

@@ -23,12 +23,11 @@ type WebService struct {
 func NewWebService() WebService {
 	// Create some context for inmemory data stores
 	gamesMap := make(map[int]*core.Game)
-	matchRequestsMap := map[int]core.MatchRequest{}
 
 	// Create in memory data stores
 	games := NewGames(gamesMap)
 	users := NewUsers()
-	matchRequests := NewMatchRequests(matchRequestsMap)
+	matchRequests := NewMatchRequests()
 	gamesInterractor := core.NewGamesInteractor(&games, &users, &matchRequests)
 	go gamesInterractor.StartGameCreateDaemon()
 	usersInteractor := core.NewUsersInteractor(&users)
@@ -43,8 +42,9 @@ func NewWebService() WebService {
 
 // MatchMeRequest is the format of the request sent to this endpoint
 type MatchMeRequest struct {
-	Secret string `json:"secret"`
-	Name   string `json:"username"`
+	Secret   string `json:"secret"`
+	Name     string `json:"username"`
+	Duration int    `json:"duration"`
 }
 
 // MatchMeRequest is the format of the request sent to this endpoint
@@ -59,6 +59,7 @@ type MatchMeResponse struct {
 	GameID   int    `json:"gameID"`
 	AreWhite bool   `json:"areWhite"`
 	OppName  string `json:"oppName"`
+	Duration string `json:"duration"`
 }
 
 // MoveRequest is the format of the request sent for GetMove/MakeMove
@@ -76,6 +77,7 @@ type MakeMoveResponse struct {
 // MoveResponse is the format of the response sent from this endpoint
 type GetMoveResponse struct {
 	Move string `json:"move"`
+	core.Game
 }
 
 func errorResponse(err error) []byte {
@@ -119,7 +121,7 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 	core.Debug(fmt.Sprintf("Matchme request for user %d", user.ID))
 
 	// Wait for match
-	game, err := service.matchRequestsInteractor.MatchMe(user.ID)
+	game, err := service.matchRequestsInteractor.MatchMe(user.ID, request.Duration)
 	if err != nil {
 		log.Printf("MATCHME ERROR: %v", err)
 		w.WriteHeader(500)
@@ -215,16 +217,19 @@ func (service *WebService) GetMove(w http.ResponseWriter, r *http.Request) {
 
 	core.Debug(fmt.Sprintf("GetMove request for user %s gameid %d", request.Secret, request.GameID))
 
-	move, err := service.gamesInteractor.GetMove(request.Secret, request.GameID)
+	move, game, err := service.gamesInteractor.GetMove(request.Secret, request.GameID)
 	if err != nil {
 		w.WriteHeader(400)
 		w.Write(errorResponse(err))
 		return
 	}
 
-	resp := GetMoveResponse{move}
+	resp := GetMoveResponse{
+		Move: move,
+		Game: *game,
+	}
 	json, _ := json.Marshal(resp)
 	w.Write([]byte(json))
 
-	core.Debug("GetMove succeeded")
+	core.Debug(fmt.Sprintf("GetMove succeeded: %+v", resp))
 }

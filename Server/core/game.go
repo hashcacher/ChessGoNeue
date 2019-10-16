@@ -6,15 +6,22 @@ import (
 	"log"
 	"math/rand"
 	"reflect"
+	"strconv"
+	"time"
 )
 
 // Game stores chessgo game state such as the current board and who is in the game
 type Game struct {
-	ID        int        `json:"id"`
-	BlackUser int        `json:"blackUser"`
-	WhiteUser int        `json:"WhiteUser"`
-	Board     [8][8]byte `json:"board"`
-	WhiteTurn bool       `json:"whiteTurn"`
+	ID               int           `json:"-"`
+	BlackUser        int           `json:"-"`
+	WhiteUser        int           `json:"-"`
+	Board            [8][8]byte    `json:"board"`
+	WhiteTurn        bool          `json:"whiteTurn"`
+	BlackLeft        time.Duration `json:"blackLeft"`
+	WhiteLeft        time.Duration `json:"whiteLeft"`
+	BlackTurnStarted time.Time     `json:"blackTurnStarted"`
+	WhiteTurnStarted time.Time     `json:"whiteTurnStarted"`
+	Duration         time.Duration `json:"duration"`
 }
 
 // Games is the use case for Game entitiy
@@ -72,9 +79,20 @@ func (i *GamesInteractor) Create(game *Game) (id int, err error) {
 		return 0, errors.New("could not find black user by that id")
 	}
 
+	// White goes first
+	game.WhiteTurn = true
+
 	// Clear the board
 	game.Board = DefaultBoard()
-	game.WhiteTurn = true
+
+	// Time
+	game.BlackLeft = game.Duration
+	game.WhiteLeft = game.Duration
+
+	lagCompensation, _ := time.ParseDuration("2s")
+	initialTime := time.Now().Add(lagCompensation)
+	game.BlackTurnStarted = initialTime
+	game.WhiteTurnStarted = initialTime
 
 	// Store game
 	id, err = i.games.Store(game)
@@ -86,18 +104,22 @@ func (i *GamesInteractor) Create(game *Game) (id int, err error) {
 }
 
 func (i GamesInteractor) GetBoard(secret string, gameID int) ([8][8]byte, error) {
-	user, err := i.users.FindBySecret(secret, "")
+	game, err := i.getGameForUserSecret(secret, gameID)
+
 	if err != nil {
-		return [8][8]byte{}, errors.New("couldnt find user by that id")
-	}
-
-	game := i.getGameForUser(user.ID, gameID)
-
-	if game == nil {
-		return [8][8]byte{}, errors.New("couldnt find game")
+		return [8][8]byte{}, err
 	}
 	return game.Board, nil
 
+}
+
+func (i GamesInteractor) getGameForUserSecret(secret string, gameID int) (*Game, error) {
+	user, err := i.users.FindBySecret(secret, "")
+	if err != nil {
+		return nil, errors.New("couldnt find user by that id")
+	}
+
+	return i.getGameForUser(user.ID, gameID), nil
 }
 
 func (i GamesInteractor) getGameForUser(userID int, gameID int) *Game {
@@ -127,40 +149,50 @@ func (i GamesInteractor) StartGameCreateDaemon() {
 	for {
 		// Wait until a store happens
 		i.matchRequests.ListenForStore()
+
 		// Get all match requests
 		matchRequests, err := i.matchRequests.FindAll()
 		if err != nil {
 			log.Printf("ERROR: %v\n", err)
 			continue
 		}
-		if len(matchRequests) <= 1 {
-			continue
-		}
-		// Delete the first two requests from the store
-		_, err = i.matchRequests.Delete(matchRequests[0].ID)
-		if err != nil {
-			log.Printf("ERROR: %v\n", err)
-		}
-		_, err = i.matchRequests.Delete(matchRequests[1].ID)
-		if err != nil {
-			log.Printf("ERROR: %v\n", err)
-		}
 
-		// Use the first two requests to create a game
-		game := Game{
-			WhiteUser: matchRequests[0].UserID,
-			BlackUser: matchRequests[1].UserID,
-		}
+		for duration, queue := range matchRequests {
+			if len(queue) <= 1 {
+				continue
+			}
+			Debug(fmt.Sprintf("Matching a %d min game with queue %+v\n", duration, queue))
 
-		// Randomize color
-		if rand.Float32() < .5 {
-			temp := game.WhiteUser
-			game.WhiteUser = game.BlackUser
-			game.BlackUser = temp
-		}
+			durationTime, _ := time.ParseDuration(strconv.Itoa(duration) + "m")
 
-		i.Create(&game)
-		log.Printf("INFO: Created game: %+v\n", game)
+			Debug(fmt.Sprintf("Matching a %d min game with queue %+v\n", duration, queue))
+			// Use the first two requests to create a game
+			game := Game{
+				WhiteUser: queue[0].UserID,
+				BlackUser: queue[1].UserID,
+				Duration:  durationTime,
+			}
+
+			// Randomize color
+			if rand.Float32() < .5 {
+				temp := game.WhiteUser
+				game.WhiteUser = game.BlackUser
+				game.BlackUser = temp
+			}
+
+			i.Create(&game)
+			log.Printf("INFO: Created game: %+v\n", game)
+
+			// Delete the first two requests from the store
+			_, err = i.matchRequests.Delete(queue[0].ID)
+			if err != nil {
+				log.Printf("ERROR: %v\n", err)
+			}
+			_, err = i.matchRequests.Delete(queue[1].ID)
+			if err != nil {
+				log.Printf("ERROR: %v\n", err)
+			}
+		}
 	}
 }
 
@@ -198,13 +230,27 @@ func (i *GamesInteractor) MakeMove(secret string, gameID int, move string) error
 		return errors.New("--not your turn")
 	}
 
-	return i.games.MakeMove(game, &user, move)
+	err = i.games.MakeMove(game, &user, move)
+	if err != nil {
+		return err
+	}
+
+	lagCompensation, _ := time.ParseDuration("250ms")
+	if user.ID == game.WhiteUser {
+		game.BlackTurnStarted = time.Now().Add(lagCompensation)
+		game.WhiteLeft = game.Duration - time.Now().Sub(game.WhiteTurnStarted)
+	} else {
+		game.WhiteTurnStarted = time.Now().Add(lagCompensation)
+		game.BlackLeft = game.Duration - time.Now().Sub(game.BlackTurnStarted)
+	}
+
+	return nil
 }
 
-func (i *GamesInteractor) GetMove(secret string, gameID int) (string, error) {
+func (i *GamesInteractor) GetMove(secret string, gameID int) (string, *Game, error) {
 	user, err := i.users.FindBySecret(secret, "")
 	if err != nil {
-		return "", errors.New("--couldnt find user by that id")
+		return "", nil, errors.New("--couldnt find user by that id")
 	}
 
 	game := i.getGameForUser(user.ID, gameID)
@@ -212,8 +258,9 @@ func (i *GamesInteractor) GetMove(secret string, gameID int) (string, error) {
 	if game == nil {
 		msg := fmt.Sprintf("--couldnt find game for secret: %s gameID: %d", secret, gameID)
 		Debug(msg)
-		return "", errors.New(msg)
+		return "", nil, errors.New(msg)
 	}
 
-	return i.games.GetMove(game, &user)
+	move, err := i.games.GetMove(game, &user)
+	return move, game, err
 }

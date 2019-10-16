@@ -4,5 +4,6 @@ namespace ChessGo
         public bool areWhite;
         public int gameID;
         public string oppName;
+        public long duration;
     }
 }

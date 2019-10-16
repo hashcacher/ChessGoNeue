@@ -137,10 +137,14 @@ func getBoard(secret string, gameID int) (string, error) {
 
 func createGame(secret1 string, secret2 string) (int, string) {
 	request1, _ := json.Marshal(inmemory.MatchMeRequest{
-		Secret: secret1,
+		Secret:   secret1,
+		Duration: 5,
+		Name:     "p1",
 	})
 	request2, _ := json.Marshal(inmemory.MatchMeRequest{
-		Secret: secret2,
+		Secret:   secret2,
+		Duration: 5,
+		Name:     "p2",
 	})
 
 	var wg sync.WaitGroup
