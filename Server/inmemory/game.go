@@ -6,6 +6,7 @@ import (
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Games struct {
@@ -230,4 +231,46 @@ func (g *Games) GetBoard(game *core.Game) [8][8]byte {
 	g.gamesLock.RLock()
 	defer g.gamesLock.RUnlock()
 	return g.games[game.ID].Board
+}
+
+func (g *Games) ListenForTimeout(game *core.Game, userID int) error {
+	zero, _ := time.ParseDuration("0s")
+
+	for {
+		// This only needs to run for one turn
+		if game.WhiteTurn && userID != game.WhiteUser ||
+			!game.WhiteTurn && userID != game.BlackUser {
+			break
+		}
+
+		var left time.Duration
+		var turnStarted time.Time
+		var color string
+		if userID == game.WhiteUser {
+			left = game.WhiteLeft
+			turnStarted = game.WhiteTurnStarted
+			color = "white"
+		} else {
+			left = game.BlackLeft
+			turnStarted = game.BlackTurnStarted
+			color = "black"
+		}
+
+		left = left - time.Now().Sub(turnStarted)
+
+		core.Debug(fmt.Sprintf("Game %d %s has %+v left", game.ID, color, left))
+		if left <= zero {
+			msg := "timeout " + color
+			core.Debug(fmt.Sprintf("Game %d %s", game.ID, msg))
+			notifyChannel, _ := g.moveEventsByUserID[game.WhiteUser]
+			notifyChannel <- msg
+			notifyChannel, _ = g.moveEventsByUserID[game.BlackUser]
+			notifyChannel <- msg
+		}
+
+		core.Debug(fmt.Sprintf("Game %d sleeping %+v", game.ID, left))
+		time.Sleep(left)
+	}
+
+	return nil
 }

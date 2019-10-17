@@ -48,19 +48,39 @@ namespace ChessGo {
         }
 
         public void OnBlackStart() {
+            if (UnitySingleton.hotseat) {
+                return;
+            }
+
             if (amWhite) {
                 ourTurn = false;
                 StopCoroutine("tick");
             } else {
                 ourTurn = true;
+
+                // White player, black clock
+                if (UnitySingleton.match.areWhite) {
+                    UnitySingleton.lastMove.blackTurnStarted = DateTime.Now.ToString();
+                }
+
                 UpdateClocks();
                 StartCoroutine("tick");
             }
         }
 
         public void OnWhiteStart() {
+            if (UnitySingleton.hotseat) {
+                return;
+            }
+
             if (amWhite) {
                 ourTurn = true;
+
+                // Black player, white clock
+                if (!UnitySingleton.match.areWhite) {
+                    UnitySingleton.lastMove.whiteTurnStarted = DateTime.Now.ToString();
+                }
+
                 UpdateClocks();
                 StartCoroutine("tick");
             } else {
@@ -74,10 +94,14 @@ namespace ChessGo {
                 timeLeft = timeLeftAtStartOfTurn - (DateTime.Now - turnStarted);
                 if (timeLeft.TotalMilliseconds <= 0) {
                     Debug.Log("nope " + timeLeft.TotalMilliseconds);
+                    // If this is the player's clock, not the opponents
+                    if (UnitySingleton.match.areWhite == amWhite) {
+                        timeout.Invoke();
+                    }
                     break;
                 } else {
                     Debug.Log("tick");
-                    text.text = timeLeft.Minutes + ":" + timeLeft.Seconds;
+                    text.text = timeLeft.Minutes + ":" + timeLeft.Seconds.ToString().PadLeft(2, '0');
                 }
                 yield return new WaitForSeconds(1f);
             }
@@ -86,11 +110,11 @@ namespace ChessGo {
         // Go server gives us time in ns(?)
         void UpdateClocks() {
             long myTimeLeft = amWhite ? UnitySingleton.lastMove.whiteLeft : UnitySingleton.lastMove.blackLeft;
-            long mLeft =  myTimeLeft / 1000 / 1000 / 1000 / 60;
-            float sLeft = (myTimeLeft - (mLeft * 1000 * 1000 * 1000 * 60)) / 1000f;
+            long mLeft =  myTimeLeft / (long)60e9;
+            float sLeft = (myTimeLeft - mLeft * (long)60e9) / 1e9f;
             TimeSpan.TryParse("0:"+ mLeft + ":" + sLeft, out timeLeftAtStartOfTurn);
 
-            Debug.Log(myTimeLeft);
+            Debug.Log((amWhite ? "white has " : "black has ") + myTimeLeft);
             Debug.Log(mLeft);
             Debug.Log(sLeft);
             Debug.Log(timeLeftAtStartOfTurn);

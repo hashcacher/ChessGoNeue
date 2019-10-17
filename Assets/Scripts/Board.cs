@@ -185,9 +185,11 @@ namespace ChessGo
         {
             if (myTurn && !preventMoves)
             {
-                if(!UpdateToggleDrag()) //if we didn't pick something up or drop something.
-                    if(!grabbed && Input.GetMouseButtonDown(0))
-                        StartCoroutine(PlaceGoStone());
+                if(!UpdateToggleDrag()) { //if we didn't pick something up or drop something.
+                    if(!grabbed && Input.GetMouseButtonDown(0)) {
+                        PlaceGoStoneMouse();
+                    }
+                }
 
                 MouseOver(); //maybe call less frequently
             }
@@ -221,12 +223,26 @@ namespace ChessGo
                         }
                     } else if (www.isHttpError) {
                         Debug.Log("ReceiveMoves error: " + www.downloadHandler.text);
+                        this.failedReceives++;
+                        yield return new WaitForSeconds(Mathf.Pow(2f, this.failedReceives) / 10f * UnityEngine.Random.Range(.5f, 1.0f));
                     } else {
                         this.failedReceives = 0;
 
                         var response = JsonUtility.FromJson<MoveResponse>(www.downloadHandler.text);
                         if (response != null) {
                             if (response.move != "") {
+                                Debug.Log(response.move);
+
+                                if (response.move.StartsWith("timeout")) {
+                                    if (response.move.Contains("white")) {
+		                        StartCoroutine(VictoryAnimation("White ran out of time."));
+                                        yield break;
+                                    } else {
+		                        StartCoroutine(VictoryAnimation("Black ran out of time."));
+                                        yield break;
+                                    }
+                                }
+
                                 // Move received!
                                 UnitySingleton.lastMove = response;
                                 MakeReceivedMove(response.move);
@@ -287,9 +303,14 @@ namespace ChessGo
             StartTurn();
         }
 
-	IEnumerator VictoryAnimation()
+	IEnumerator VictoryAnimation(string reason)
 	{
 	    gameOver = true;
+
+            winPanel.gameObject.SetActive(true);
+            var title = winPanel.transform.Find("Title").GetComponent<Text>();
+            title.text = reason;
+
 	    // Spam Stones
 	    for (int n = 1; n <= 4; n++) {
 		for (int x = 0; x < 8; x++) {
@@ -298,7 +319,6 @@ namespace ChessGo
 		    }
 		    yield return null;
 		}
-
 	    }
 	}
 
@@ -438,8 +458,7 @@ namespace ChessGo
             {
                 Point p = CurrentlyDraggingChessPiece() ? ClosestPoint(grabbed.transform.position) : GetSquareUnderMouse();
 
-                if (p.col != -1)
-                {
+                if (inRange(p)) {
                     //if we're still mousing over the same square
                     if (p.Equals(mouseHighlightPoint))
                         return;
@@ -452,18 +471,15 @@ namespace ChessGo
                     }
 
 
-                    if (CurrentlyDraggingChessPiece())
-                    {
-                        if (Algos.IsValidMove(grabbedInitialPoint, p, board) && !Algos.IsEmptyAt(p, board))
-                        {
+                    if (CurrentlyDraggingChessPiece()) {
+                        if (Algos.IsValidMove(grabbedInitialPoint, p, board) && !Algos.IsEmptyAt(p, board)) {
                             mouseHighlight = GetPieceAtPoint(p).gameObject;
                             Renderer rend = mouseHighlight.GetComponent<Renderer>();
                             mouseHighlightColor = rend.material.GetColor("_EmissionColor");
                             rend.material.SetColor("_EmissionColor", Color.red);
                         }
                     }
-                    else
-                    {
+                    else {
                         if (Algos.IsEmptyAt(p, board))
                         {
                             mouseHighlight = CreateHighlight(validMove, p.row, p.col);
@@ -482,8 +498,9 @@ namespace ChessGo
                         }
                     }
                 }
-                else
+                else {
                     ResetMouseOver();
+                }
             }
         }
 
@@ -661,10 +678,18 @@ namespace ChessGo
 
                     StartCoroutine(SendMoveToServer(prevPoint, p));
 
-                    if (usingServer)
+                    if (IAmBlack) {
+                        whiteTurnStarted.Invoke();
+                    } else {
+                        blackTurnStarted.Invoke();
+                    }
+
+                    if (usingServer) {
                         EndTurn();
-                    else
+                    }
+                    else {
                         EndTurnHotseat();
+                    }
                 }
                 else //put it back
                     StartCoroutine(Util.SmoothMove(grabbed, grabbedPrevPos, .2f));
@@ -842,11 +867,16 @@ namespace ChessGo
                 z++;
             }
 
-            if (x < 0 || x > 7 || z < 0 || z > 7) {
+            var pt = new Point(x, z);
+            if (!inRange(pt)) {
                 return new Point(-1, -1);
             }
 
-            return new Point(x, z);
+            return pt;
+        }
+
+        bool inRange(Point p) {
+            return !(p.row < 0 || p.row > 7 || p.col < 0 || p.col > 7);
         }
 
         float getW()
@@ -897,9 +927,23 @@ namespace ChessGo
                 Debug.LogError("Server told me to place a Go stone where the was already a piece");
         }
 
+        IEnumerator DropGoStone(Point p) {
+            PlaceStone(p, IAmBlack ? 'S' : 's');
+
+            yield return new WaitForSeconds(.8f); //wait for the stone to drop
+
+            if (usingServer) {
+                EndTurn();
+            }
+            else {
+                EndTurnHotseat();
+            }
+        }
+
         //when a player clicks an empty place
-        IEnumerator PlaceGoStone()
+        void PlaceGoStoneMouse()
         {
+            preventMoves = true;
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, 1 << LayerMask.NameToLayer("Board")))
@@ -910,26 +954,23 @@ namespace ChessGo
                     Point p = ClosestPoint(hit.point);
 
                     //if they clicked in an empty spot
-                    if (GetBoardPiece(p) == '\0')
+                    if (inRange(p) && GetBoardPiece(p) == '\0')
                     {
-                        //place either white or black Stone.
-                        PlaceStone(p, IAmBlack ? 'S' : 's');
-                        StartCoroutine(SendMoveToServer(p, null));
-
-                        yield return new WaitForSeconds(.8f); //wait for the stone to drop
                         CheckSurrounded(p);
 
-                        if (usingServer) {
-                            EndTurn();
-                        }
-                        else {
-                            preventMoves = true;
-                            EndTurnHotseat();
-                            preventMoves = false;
+                        //place either white or black Stone.
+                        StartCoroutine(DropGoStone(p));
+                        StartCoroutine(SendMoveToServer(p, null));
+
+                        if (IAmBlack) {
+                            whiteTurnStarted.Invoke();
+                        } else {
+                            blackTurnStarted.Invoke();
                         }
                     }
                 }
             }
+            preventMoves = false;
         }
 
 
@@ -963,11 +1004,6 @@ namespace ChessGo
             myTurnText.enabled = false;
             myTurn = false;
             FlipTurnButtonColor();
-            if (IAmBlack) {
-                blackTurnEnded.Invoke();
-            } else {
-                whiteTurnEnded.Invoke();
-            }
         }
 
         private void FlipTurnButtonColor()
@@ -1032,9 +1068,8 @@ namespace ChessGo
 		    Destroy(pieces[p2.row, p2.col]);
 		    Destroy(pieces2D[p2.row, p2.col]);
 		    board[p2.row, p2.col] = '\0';
-		    StartCoroutine(VictoryAnimation());
-
-                    winPanel.gameObject.SetActive(true);
+                    string winner = board[p2.row, p2.col] == 'K' ? "White" : "Black";
+		    StartCoroutine(VictoryAnimation(winner + " wins by killing the king."));
                     if (board[p2.row, p2.col] == 'k' && IAmBlack || board[p2.row, p2.col] == 'K' && !IAmBlack) {
                         // TODO AsyncServerConnection.Send(Messages.WIN);
                     }
@@ -1061,7 +1096,9 @@ namespace ChessGo
                 Destroy(pieces[p.row, p.col]);
                 Destroy(pieces2D[p.row, p.col]);
                 board[p.row, p.col] = '\0';
-                StartCoroutine(VictoryAnimation());
+
+                string winner = board[p.row, p.col] == 'K' ? "White" : "Black";
+		StartCoroutine(VictoryAnimation(winner + " wins by surrounding the king."));
             }
             else if (board [p.row, p.col] == '\0') {
                 Debug.Log ("Attempted to Kill Empty Position");

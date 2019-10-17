@@ -35,6 +35,7 @@ type Games interface {
 	FindById(id int) (Game, error)
 	FindByUserId(id int) ([]*Game, error)
 	Update(*Game) error
+	ListenForTimeout(game *Game, userID int) error
 }
 
 // GamesInteractor is a struct that holds data to be injected for use cases
@@ -99,6 +100,9 @@ func (i *GamesInteractor) Create(game *Game) (id int, err error) {
 	if err != nil {
 		return 0, err
 	}
+
+	// Game is started with white's turn!
+	go i.games.ListenForTimeout(game, whiteUser.ID)
 
 	return id, nil
 }
@@ -235,14 +239,18 @@ func (i *GamesInteractor) MakeMove(secret string, gameID int, move string) error
 		return err
 	}
 
+	// Update clocks
 	lagCompensation, _ := time.ParseDuration("250ms")
 	if user.ID == game.WhiteUser {
 		game.BlackTurnStarted = time.Now().Add(lagCompensation)
-		game.WhiteLeft = game.Duration - time.Now().Sub(game.WhiteTurnStarted)
+		game.WhiteLeft = game.WhiteLeft - time.Now().Sub(game.WhiteTurnStarted)
 	} else {
 		game.WhiteTurnStarted = time.Now().Add(lagCompensation)
-		game.BlackLeft = game.Duration - time.Now().Sub(game.BlackTurnStarted)
+		game.BlackLeft = game.BlackLeft - time.Now().Sub(game.BlackTurnStarted)
 	}
+
+	// If the player time's out, find out
+	go i.games.ListenForTimeout(game, user.ID)
 
 	return nil
 }

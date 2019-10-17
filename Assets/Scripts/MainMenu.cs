@@ -179,7 +179,7 @@ namespace ChessGo
         void Unmatchme() {
             matchMeRequest.webRequest.Abort();
             matchMeRequest = null;
-        } 
+        }
 
         public void OnBackPress() {
             if (matchMeRequest != null) {
