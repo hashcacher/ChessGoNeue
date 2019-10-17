@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"time"
 
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 )
@@ -55,11 +56,11 @@ type GetBoardRequest struct {
 
 // MatchMeResponse is the format of the response sent from this endpoint
 type MatchMeResponse struct {
-	Err      string `json:"err"`
-	GameID   int    `json:"gameID"`
-	AreWhite bool   `json:"areWhite"`
-	OppName  string `json:"oppName"`
-	Duration string `json:"duration"`
+	Err      string        `json:"err"`
+	GameID   int           `json:"gameID"`
+	AreWhite bool          `json:"areWhite"`
+	OppName  string        `json:"oppName"`
+	Duration time.Duration `json:"duration"`
 }
 
 // MoveRequest is the format of the request sent for GetMove/MakeMove
@@ -144,6 +145,7 @@ func (service *WebService) MatchMe(w http.ResponseWriter, r *http.Request) {
 		GameID:   game.ID,
 		AreWhite: game.WhiteUser == user.ID,
 		OppName:  oppName,
+		Duration: game.Duration,
 	}
 	json, _ := json.Marshal(resp)
 	w.Write(json)
@@ -214,8 +216,6 @@ func (service *WebService) GetMove(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("invalid arguments"))
 		return
 	}
-
-	core.Debug(fmt.Sprintf("GetMove request for user %s gameid %d", request.Secret, request.GameID))
 
 	move, game, err := service.gamesInteractor.GetMove(request.Secret, request.GameID)
 	if err != nil {

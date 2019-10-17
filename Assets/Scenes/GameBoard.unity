@@ -2918,11 +2918,11 @@ MonoBehaviour:
   winScreen: {fileID: 1175977127}
   whiteTurnImage: {fileID: 21300000, guid: 64246acf0aa7ff6438d42ad8594ca4c9, type: 3}
   blackTurnImage: {fileID: 21300000, guid: 8d9880b8989e6e444b2d32292146b242, type: 3}
-  turnStarted:
+  whiteTurnStarted:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 993108569}
-        m_MethodName: OnTurnStart
+        m_MethodName: OnWhiteStart
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2932,11 +2932,83 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  turnEnded:
+      - m_Target: {fileID: 1087449608}
+        m_MethodName: OnWhiteStart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  blackTurnStarted:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 993108569}
-        m_MethodName: OnTurnEnd
+        m_MethodName: OnBlackStart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1087449608}
+        m_MethodName: OnBlackStart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  whiteTurnEnded:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 993108569}
+        m_MethodName: OnBlackStart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1087449608}
+        m_MethodName: OnBlackStart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  blackTurnEnded:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 993108569}
+        m_MethodName: OnWhiteStart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1087449608}
+        m_MethodName: OnWhiteStart
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3062,7 +3134,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 10:00
+  m_Text: 
 --- !u!222 &993108568
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3314,7 +3386,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 10:00
+  m_Text: 
 --- !u!222 &1087449610
 CanvasRenderer:
   m_ObjectHideFlags: 0

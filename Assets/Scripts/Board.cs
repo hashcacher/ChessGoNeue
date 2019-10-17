@@ -107,8 +107,10 @@ namespace ChessGo
 
         private short failedReceives, failedSends = 0;
 
-        public UnityEvent turnStarted;
-        public UnityEvent turnEnded;
+        public UnityEvent whiteTurnStarted;
+        public UnityEvent blackTurnStarted;
+        public UnityEvent whiteTurnEnded;
+        public UnityEvent blackTurnEnded;
 
         void Awake() {
             //Find objects
@@ -231,7 +233,11 @@ namespace ChessGo
                                 Debug.Log("received move " + www.downloadHandler.text);
 
                                 //DateTime.TryParse(response.turnStarted, out UnitySingleton.turnStarted );
-                                turnStarted.Invoke();
+                                if (IAmBlack) {
+                                    blackTurnStarted.Invoke();
+                                } else {
+                                    whiteTurnStarted.Invoke();
+                                }
                             }
                         }
                     }
@@ -957,7 +963,11 @@ namespace ChessGo
             myTurnText.enabled = false;
             myTurn = false;
             FlipTurnButtonColor();
-            turnEnded.Invoke();
+            if (IAmBlack) {
+                blackTurnEnded.Invoke();
+            } else {
+                whiteTurnEnded.Invoke();
+            }
         }
 
         private void FlipTurnButtonColor()

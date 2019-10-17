@@ -19,15 +19,19 @@ namespace ChessGo {
         }
 
         void Start() {
-            if (false && UnitySingleton.hotseat) {
+            if (UnitySingleton.hotseat) {
                 this.gameObject.SetActive(false);
             } else {
+                // Board is rotated 180
+                if (UnitySingleton.match.areWhite) {
+                   amWhite = !amWhite;
+                }
+
                 // Set initial clocks with a fake move response
                 MoveResponse init = new MoveResponse();
                 init.blackLeft = UnitySingleton.match.duration;
                 init.whiteLeft = UnitySingleton.match.duration;
-                //init.blackLeft = 5l * 1000 * 1000 * 1000 * 60;
-                //init.whiteLeft = 5l * 1000 * 1000 * 1000 * 60;
+
                 DateTime now = DateTime.Now;
                 init.blackTurnStarted = now.ToString();
                 init.whiteTurnStarted = now.ToString();
@@ -35,20 +39,34 @@ namespace ChessGo {
                 UpdateClocks();
 
                 if (amWhite) {
-                    OnTurnStart();
+                    OnWhiteStart();
+                } else {
+                    timeLeft = timeLeftAtStartOfTurn - (DateTime.Now - turnStarted);
+                    text.text = timeLeft.Minutes + ":" + timeLeft.Seconds;
                 }
             }
         }
 
-        public void OnTurnStart() {
-            ourTurn = true;
-            UpdateClocks();
-            StartCoroutine("tick");
+        public void OnBlackStart() {
+            if (amWhite) {
+                ourTurn = false;
+                StopCoroutine("tick");
+            } else {
+                ourTurn = true;
+                UpdateClocks();
+                StartCoroutine("tick");
+            }
         }
 
-        public void OnTurnEnd() {
-            ourTurn = false;
-            StopCoroutine("tick");
+        public void OnWhiteStart() {
+            if (amWhite) {
+                ourTurn = true;
+                UpdateClocks();
+                StartCoroutine("tick");
+            } else {
+                ourTurn = false;
+                StopCoroutine("tick");
+            }
         }
 
         IEnumerator tick() {
