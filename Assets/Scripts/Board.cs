@@ -699,7 +699,6 @@ namespace ChessGo
 
         IEnumerator SendMoveToServer(Point p1, Point p2)
         {
-            Debug.LogError("sending move1");
             if (!usingServer)
                 yield break;
 
@@ -714,7 +713,6 @@ namespace ChessGo
             var msg = JsonUtility.ToJson(request);
             var host = Net.GetServerHost(); // Post to our api
             using (UnityWebRequest www = Net.GoodPost(host + "/v1/makeMove", msg)) {
-                Debug.LogError("sending move2");
                     yield return www.SendWebRequest();
 
                     if (www.isNetworkError) {
@@ -956,10 +954,10 @@ namespace ChessGo
                     //if they clicked in an empty spot
                     if (inRange(p) && GetBoardPiece(p) == '\0')
                     {
-                        CheckSurrounded(p);
-
                         //place either white or black Stone.
                         StartCoroutine(DropGoStone(p));
+                        CheckSurrounded(p);
+
                         StartCoroutine(SendMoveToServer(p, null));
 
                         if (IAmBlack) {
