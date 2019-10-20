@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 	"github.com/hashcacher/ChessGoNeue/Server/v2/inmemory"
 	"io/ioutil"
 	"math/rand"
@@ -26,6 +27,8 @@ func main() {
 	gameID, firstPlayer := createGame("123", "456")
 	makeRandomMoves(10, firstPlayer, gameID, "123", "456")
 	board, _ := getBoard("123", gameID)
+	activeGames := getActiveGames("123")
+	fmt.Printf("My active games: %+v", activeGames)
 	fmt.Println(board)
 }
 func randomMove() string {
@@ -133,6 +136,20 @@ func getBoard(secret string, gameID int) (string, error) {
 	err = json.Unmarshal(bodyBytes, &res)
 
 	return res.Board, err
+}
+
+func getActiveGames(secret string) []core.GamePublic {
+	reqJSON, _ := json.Marshal(inmemory.MyGamesRequest{
+		Secret: secret,
+	})
+
+	req, _ := http.Post(HOST+"/v1/myGames", "application/json", bytes.NewBuffer(reqJSON))
+	bodyBytes, _ := ioutil.ReadAll(req.Body)
+
+	var res inmemory.MyGamesResponse
+	json.Unmarshal(bodyBytes, &res)
+
+	return res.Games
 }
 
 func createGame(secret1 string, secret2 string) (int, string) {

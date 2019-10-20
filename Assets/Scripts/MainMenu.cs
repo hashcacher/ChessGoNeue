@@ -34,6 +34,8 @@ namespace ChessGo
         private int failedConnections = 0;
         private UnityWebRequestAsyncOperation matchMeRequest;
 
+        public GameObject myGamePrefab;
+
         void Awake() {
             toggleGroup = GameObject.FindObjectOfType<ToggleGroup>();
             nickname = GameObject.Find("Nickname Input").GetComponent<InputField>();
@@ -72,6 +74,58 @@ namespace ChessGo
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             return new string(Enumerable.Repeat(chars, length)
               .Select(s => s[Random.Range(0, s.Length)]).ToArray());
+        }
+
+        IEnumerator MyGames() {
+            var request = new MatchRequest();
+            request.secret = UnitySingleton.secret;
+            var msg = JsonUtility.ToJson(request);
+            var host = Net.GetServerHost();
+
+            // Post to our api
+            using (UnityWebRequest www = Net.GoodPost(host + "/v1/myGames", msg))
+                {
+                matchMeRequest = www.SendWebRequest();
+                yield return matchMeRequest;
+
+                if (www.isNetworkError) {
+                    // User hit cancel
+                    if (www.error == "Request aborted") {
+                        yield break;
+                    }
+
+                    // Exponential backoff
+                    Debug.LogError("MyGames network error: " + www.error);
+                    this.failedConnections++;
+                    yield return new WaitForSeconds(Mathf.Pow(2f, this.failedConnections) / 10f * Random.Range(.5f, 1.0f));
+
+                    if (this.failedConnections >= 5) {
+                        errorMessage.text = "Server is experiencing technical difficulties. Please try again later.";
+                        OnBackPress();
+                    } else {
+                        StartCoroutine(MyGames());
+                    }
+                } else if (www.isHttpError) {
+                    Debug.Log("MyGames error: " + www.downloadHandler.text);
+                } else {
+                    // Found! Start game
+                    var response = JsonUtility.FromJson<MyGamesResponse>(www.downloadHandler.text);
+                    if (response != null) {
+                        myGames = response.games;
+                        UpdateMyGames(myGames);
+                    } else {
+                        Debug.Log("Couldnt parse server response: " + www.downloadHandler.text);
+                    }
+                }
+            }
+        }
+
+        void UpdateMyGames(GamePublic[] games) {
+            for (int i = 0; i < games.Length; i++) {
+                var game = Instantiate(myGamePrefab, new Vector2(0, i*200), Quaternion.Identity) as MyGame;
+                game.SetData(games[i]);
+                game.parent = myGamesPanel;
+            }
         }
 
         IEnumerator MatchMe(int duration) {

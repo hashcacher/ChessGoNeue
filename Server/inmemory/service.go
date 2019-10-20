@@ -48,7 +48,12 @@ type MatchMeRequest struct {
 	Duration int    `json:"duration"`
 }
 
-// MatchMeRequest is the format of the request sent to this endpoint
+// MyGamesRequest is the format of the request sent to this endpoint
+type MyGamesRequest struct {
+	Secret string `json:"secret"`
+}
+
+// GetBoardRequest is the format of the request sent to this endpoint
 type GetBoardRequest struct {
 	Secret string `json:"secret"`
 	GameID int    `json:"gameID"`
@@ -70,15 +75,17 @@ type MoveRequest struct {
 	Move   string `json:"move"`
 }
 
-// MoveResponse is the format of the response sent from this endpoint
 type MakeMoveResponse struct {
 	Success bool `json:"success"`
 }
 
-// MoveResponse is the format of the response sent from this endpoint
 type GetMoveResponse struct {
 	Move string `json:"move"`
 	core.Game
+}
+
+type MyGamesResponse struct {
+	Games []core.GamePublic `json:"games"`
 }
 
 func errorResponse(err error) []byte {
@@ -232,4 +239,32 @@ func (service *WebService) GetMove(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(json))
 
 	core.Debug(fmt.Sprintf("GetMove succeeded: %+v", resp))
+}
+
+func (service *WebService) MyGames(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var request MyGamesRequest
+	err := decoder.Decode(&request)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write(errorResponse(errors.New("invalid arguments")))
+		return
+	}
+
+	core.Debug(fmt.Sprintf("my games request for user %s", request.Secret))
+
+	games, err := service.gamesInteractor.GetActiveGamesForUser(request.Secret)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write(errorResponse(errors.New("error getting games " + err.Error())))
+		return
+	}
+
+	resp := MyGamesResponse{
+		Games: games,
+	}
+	json, _ := json.Marshal(resp)
+	w.Write([]byte(json))
+
+	core.Debug("MyGames")
 }

@@ -233,7 +233,7 @@ func (g *Games) GetBoard(game *core.Game) [8][8]byte {
 	return g.games[game.ID].Board
 }
 
-func (g *Games) ListenForTimeout(game *core.Game, userID int) error {
+func (g *Games) ListenForTimeout(game *core.Game, userID int, onComplete func(*core.Game) error) error {
 	zero, _ := time.ParseDuration("0s")
 
 	for {
@@ -260,12 +260,16 @@ func (g *Games) ListenForTimeout(game *core.Game, userID int) error {
 
 		core.Debug(fmt.Sprintf("Game %d %s has %+v left", game.ID, color, left))
 		if left <= zero {
+			// Notify the players
 			msg := "timeout " + color
 			core.Debug(fmt.Sprintf("Game %d %s", game.ID, msg))
 			notifyChannel, _ := g.moveEventsByUserID[game.WhiteUser]
 			notifyChannel <- msg
 			notifyChannel, _ = g.moveEventsByUserID[game.BlackUser]
 			notifyChannel <- msg
+
+			onComplete(game)
+			break
 		}
 
 		core.Debug(fmt.Sprintf("Game %d sleeping %+v", game.ID, left))

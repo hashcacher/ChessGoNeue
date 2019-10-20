@@ -1,7 +1,6 @@
 package inmemory
 
 import (
-	"fmt"
 	"github.com/hashcacher/ChessGoNeue/Server/v2/core"
 	"sync"
 )
@@ -83,19 +82,11 @@ func (r *MatchRequests) Delete(id int) (deleted int, err error) {
 
 	duration, idx := r.find(id)
 	if idx != -1 {
-		r.matchRequests[duration] = remove(r.matchRequests[duration], idx)
+		r.matchRequests[duration] = core.RemoveMatchRequest(r.matchRequests[duration], idx)
 		return 1, nil
 	}
 
 	return 0, nil
-}
-
-func remove(s []core.MatchRequest, i int) []core.MatchRequest {
-	core.Debug(fmt.Sprintf("Removing request %+v\n", s[i]))
-
-	s[i] = s[len(s)-1]
-	// We do not need to put s[i] at the end, as it will be discarded anyway
-	return s[:len(s)-1]
 }
 
 func (r *MatchRequests) DeleteByUserID(userID int) (deleted int, err error) {

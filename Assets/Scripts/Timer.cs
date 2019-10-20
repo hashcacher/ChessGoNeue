@@ -112,7 +112,7 @@ namespace ChessGo {
             long myTimeLeft = amWhite ? UnitySingleton.lastMove.whiteLeft : UnitySingleton.lastMove.blackLeft;
             long mLeft =  myTimeLeft / (long)60e9;
             float sLeft = (myTimeLeft - mLeft * (long)60e9) / 1e9f;
-            TimeSpan.TryParse("0:"+ mLeft + ":" + sLeft, out timeLeftAtStartOfTurn);
+            TimeSpan.TryParse("0:" + mLeft + ":" + sLeft, out timeLeftAtStartOfTurn);
 
             Debug.Log((amWhite ? "white has " : "black has ") + myTimeLeft);
             Debug.Log(mLeft);

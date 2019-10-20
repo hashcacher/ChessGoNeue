@@ -22,6 +22,14 @@ type Game struct {
 	BlackTurnStarted time.Time     `json:"blackTurnStarted"`
 	WhiteTurnStarted time.Time     `json:"whiteTurnStarted"`
 	Duration         time.Duration `json:"duration"`
+	Active           bool          `json:"active"`
+}
+
+type GamePublic struct {
+	ID       int           `json:"ID"`
+	Opponent string        `json:"opponent"`
+	TimeLeft time.Duration `json:"timeLeft"`
+	MyTurn   bool          `json:"myTurn"`
 }
 
 // Games is the use case for Game entitiy
@@ -35,7 +43,7 @@ type Games interface {
 	FindById(id int) (Game, error)
 	FindByUserId(id int) ([]*Game, error)
 	Update(*Game) error
-	ListenForTimeout(game *Game, userID int) error
+	ListenForTimeout(game *Game, userID int, onComplete func(*Game) error) error
 }
 
 // GamesInteractor is a struct that holds data to be injected for use cases
@@ -82,6 +90,7 @@ func (i *GamesInteractor) Create(game *Game) (id int, err error) {
 
 	// White goes first
 	game.WhiteTurn = true
+	game.Active = true
 
 	// Clear the board
 	game.Board = DefaultBoard()
@@ -102,7 +111,7 @@ func (i *GamesInteractor) Create(game *Game) (id int, err error) {
 	}
 
 	// Game is started with white's turn!
-	go i.games.ListenForTimeout(game, whiteUser.ID)
+	go i.games.ListenForTimeout(game, whiteUser.ID, i.CompleteGame)
 
 	return id, nil
 }
@@ -215,46 +224,6 @@ func DefaultBoard() [8][8]byte {
 	return board
 }
 
-// MakeMove validates a user and then performs a move
-func (i *GamesInteractor) MakeMove(secret string, gameID int, move string) error {
-	user, err := i.users.FindBySecret(secret, "")
-	if err != nil {
-		return errors.New("--couldnt find user by that id")
-	}
-
-	game := i.getGameForUser(user.ID, gameID)
-	if game == nil {
-		return errors.New("--couldnt find game")
-	}
-
-	if game.WhiteTurn && game.WhiteUser != user.ID ||
-		!game.WhiteTurn && game.BlackUser != user.ID {
-		Debug(fmt.Sprintf("--Wrong turn for user %s for game: %+v\n", secret, game))
-
-		return errors.New("--not your turn")
-	}
-
-	err = i.games.MakeMove(game, &user, move)
-	if err != nil {
-		return err
-	}
-
-	// Update clocks
-	lagCompensation, _ := time.ParseDuration("250ms")
-	if user.ID == game.WhiteUser {
-		game.BlackTurnStarted = time.Now().Add(lagCompensation)
-		game.WhiteLeft = game.WhiteLeft - time.Now().Sub(game.WhiteTurnStarted)
-	} else {
-		game.WhiteTurnStarted = time.Now().Add(lagCompensation)
-		game.BlackLeft = game.BlackLeft - time.Now().Sub(game.BlackTurnStarted)
-	}
-
-	// If the player time's out, find out
-	go i.games.ListenForTimeout(game, user.ID)
-
-	return nil
-}
-
 func (i *GamesInteractor) GetMove(secret string, gameID int) (string, *Game, error) {
 	user, err := i.users.FindBySecret(secret, "")
 	if err != nil {
@@ -271,4 +240,48 @@ func (i *GamesInteractor) GetMove(secret string, gameID int) (string, *Game, err
 
 	move, err := i.games.GetMove(game, &user)
 	return move, game, err
+}
+
+func (i *GamesInteractor) GetActiveGamesForUser(secret string) ([]GamePublic, error) {
+	user, err := i.users.FindBySecret(secret, "")
+	if err != nil {
+		return nil, errors.New("couldnt find user by that id")
+	}
+
+	games, err := i.games.FindByUserId(user.ID)
+	if err != nil {
+		return []GamePublic{}, err
+	}
+
+	processedGames := []GamePublic{}
+	for i := len(games) - 1; i >= 0; i-- {
+		game := games[i]
+		if game.Active == true {
+			var timeLeft time.Duration
+			var myTurn bool
+			if user.ID == game.WhiteUser {
+				timeLeft = game.WhiteLeft
+				myTurn = game.WhiteTurn
+			} else {
+				timeLeft = game.BlackLeft
+				myTurn = !game.WhiteTurn
+			}
+
+			processedGames = append(processedGames, GamePublic{
+				ID:       game.ID,
+				Opponent: "player 2",
+				TimeLeft: timeLeft,
+				MyTurn:   myTurn,
+			})
+		}
+	}
+
+	return processedGames, nil
+}
+
+func (i *GamesInteractor) CompleteGame(game *Game) error {
+	game.Active = false
+	i.games.Store(game)
+	adjustElo(game)
+	return nil
 }
