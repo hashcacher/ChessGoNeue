@@ -28,6 +28,7 @@ namespace ChessGo
         public ToggleGroup toggleGroup;
 
         public RectTransform [] menuPanels;
+        public RectTransform myGamesPanel;
 
         private MarkovNameGenerator generator;
 
@@ -35,6 +36,7 @@ namespace ChessGo
         private UnityWebRequestAsyncOperation matchMeRequest;
 
         public GameObject myGamePrefab;
+        private MyGame []myGames;
 
         void Awake() {
             toggleGroup = GameObject.FindObjectOfType<ToggleGroup>();
@@ -44,6 +46,7 @@ namespace ChessGo
 
             countdown = GameObject.Find("Countdown").GetComponent<Text>();
             searching = GameObject.Find("Searching Header").GetComponent<Text>();
+            myGamesPanel = GameObject.Find("MyGamesPanel").GetComponent<RectTransform>();
 
             // Get / generate player ID
             if (PlayerPrefs.HasKey("secret")) {
@@ -64,6 +67,9 @@ namespace ChessGo
             canvas = GameObject.Find("Canvas").GetComponent<Canvas>();
 
             nickname.text = UnitySingleton.name;
+            myGames = new MyGame[50];
+            StartCoroutine("MyGames");
+
         }
 
         void Start() {
@@ -109,10 +115,10 @@ namespace ChessGo
                     Debug.Log("MyGames error: " + www.downloadHandler.text);
                 } else {
                     // Found! Start game
-                    var response = JsonUtility.FromJson<MyGamesResponse>(www.downloadHandler.text);
+                    GamePublic[] response = JsonHelper.FromJson<GamePublic>(www.downloadHandler.text);
+                    Debug.Log(www.downloadHandler.text);
                     if (response != null) {
-                        myGames = response.games;
-                        UpdateMyGames(myGames);
+                        UpdateMyGames(response);
                     } else {
                         Debug.Log("Couldnt parse server response: " + www.downloadHandler.text);
                     }
@@ -121,10 +127,18 @@ namespace ChessGo
         }
 
         void UpdateMyGames(GamePublic[] games) {
+            // Delete any existing games
+            foreach(MyGame game in myGames) {
+                Destroy(game);
+            }
+
+            // Create UI stuff for my games
             for (int i = 0; i < games.Length; i++) {
-                var game = Instantiate(myGamePrefab, new Vector2(0, i*200), Quaternion.Identity) as MyGame;
+                var game = Instantiate(myGamePrefab, Vector2.up, Quaternion.identity).GetComponent<MyGame>();
                 game.SetData(games[i]);
-                game.parent = myGamesPanel;
+                game.transform.parent = myGamesPanel;
+                game.transform.localPosition = new Vector2(0, i*50);
+                myGames.Append(game);
             }
         }
 
